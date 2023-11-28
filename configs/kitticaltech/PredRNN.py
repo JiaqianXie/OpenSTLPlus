@@ -17,5 +17,5 @@ patch_size = 2
 layer_norm = 0
 # training
 lr = 1e-2
-batch_size = 16
+batch_size = 8
 sched = 'onecycle'

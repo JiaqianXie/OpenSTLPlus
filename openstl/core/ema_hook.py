@@ -135,7 +135,7 @@ class EMAHook(Hook):
 
     def after_val_epoch(self, runner):
         """We recover source model's parameter from ema model after validation."""
-        if self.evaluate_on_ema:
+        if self.evaluate_ouhjn_ema:
             # Swap when evaluate on ema
             print('switch back to ori params')
             self._swap_ema_parameters()

@@ -57,8 +57,11 @@ class Routing(nn.Module):
             nn.AdaptiveAvgPool2d((1, 1)),
         )
 
+
     def forward(self, x):
-        return self.routing(x)
+        result = self.routing(x)
+
+        return result
 
 
 class MVFB(nn.Module):

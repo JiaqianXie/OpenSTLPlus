@@ -17,6 +17,8 @@ from openstl.methods import method_maps
 from openstl.utils import (set_seed, print_log, output_namespace, check_dir, collect_env,
                            init_dist, init_random_seed,
                            get_dataset, get_dist_info, measure_throughput, weights_to_cpu)
+import pickle as pkl
+import wandb
 
 try:
     import nni
@@ -45,6 +47,9 @@ class BaseExperiment(object):
         self._world_size = 1
         self._dist = self.args.dist
         self._early_stop = self.args.early_stop_epoch
+
+        self.val_result = None
+        self.train_loss = None
 
         self._preparation(dataloaders)
         if self._rank == 0:
@@ -301,7 +306,8 @@ class BaseExperiment(object):
 
             num_updates, loss_mean, eta = self.method.train_one_epoch(self, self.train_loader,
                                                                       epoch, num_updates, eta)
-
+            self.train_loss = loss_mean
+            self.call_hook("after_train_epoch")
             self._epoch = epoch
             if epoch % self.args.log_step == 0:
                 cur_lr = self.method.current_lr()
@@ -330,6 +336,7 @@ class BaseExperiment(object):
         """A validation loop during training"""
         self.call_hook('before_val_epoch')
         results, eval_log = self.method.vali_one_epoch(self, self.vali_loader)
+        self.val_result = results
         self.call_hook('after_val_epoch')
 
         if self._rank == 0:
@@ -339,14 +346,25 @@ class BaseExperiment(object):
 
         return results['loss'].mean()
 
+    # def load_temp_result
+
     def test(self):
         """A testing loop of STL methods"""
         if self.args.test:
             best_model_path = osp.join(self.path, 'checkpoint.pth')
             self._load_from_state_dict(torch.load(best_model_path))
 
+        del self.train_loader
+        del self.vali_loader
+
         self.call_hook('before_val_epoch')
         results = self.method.test_one_epoch(self, self.test_loader)
+        if self._rank == 0:
+            folder_path = osp.join(self.path, 'saved')
+            check_dir(folder_path)
+            with open(os.path.join(folder_path, "intermediate_results.pkl"), "wb") as output:
+                pkl.dump(results, output)
+            print("intermediate results saved.")
         self.call_hook('after_val_epoch')
 
         if 'weather' in self.args.dataname:

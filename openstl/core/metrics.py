@@ -23,6 +23,9 @@ def MAE(pred, true, spatial_norm=False):
 
 
 def MSE(pred, true, spatial_norm=False):
+#    norm = pred.shape[-1] * pred.shape[-2] * pred.shape[-3]
+#    my_mse = np.mean((pred-true)**2 / norm, axis=(0, 1)).sum()
+#    print("Spatial normed MSE:", str(my_mse))
     if not spatial_norm:
         return np.mean((pred-true)**2, axis=(0, 1)).sum()
     else:

@@ -14,3 +14,7 @@ coef = 0.5
 lr = 5e-4
 batch_size = 16
 sched = 'onecycle'
+epoch=250
+# ema_hook = dict(momentum=1e-4, priority='ABOVE_NORMAL')
+save_best_hook = dict(priority='ABOVE_NORMAL')
+wandb_hook = dict(priority='ABOVE_NORMAL')

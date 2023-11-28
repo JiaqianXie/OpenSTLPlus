@@ -6,9 +6,13 @@ from .metrics import metric
 from .recorder import Recorder
 from .optim_scheduler import get_optim_scheduler
 from .optim_constant import optim_parameters
+from .save_best_hook import SaveBestHook
+from .wandb_hook import WandBHook
 
 hook_maps = {
-    'emahook': EMAHook,
+    'ema_hook': EMAHook,
+    'save_best_hook': SaveBestHook,
+    'wandb_hook': WandBHook,
     **dict.fromkeys(['semahook', 'switchemahook'], SwitchEMAHook),
 }
 

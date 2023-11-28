@@ -6,6 +6,7 @@ import imageio
 import numpy as np
 
 import matplotlib.pyplot as plt
+from PIL import Image
 
 
 def imshow(img: Union[str, np.ndarray],
@@ -143,15 +144,17 @@ def show_video_gif_multiple(prev, true, pred, vmax=0.6, vmin=0.0, cmap='gray', n
             ax.axis('off')
             im.set_clim(vmin, vmax)
         plt.savefig('./tmp.png', bbox_inches='tight', format='png')
-        images.append(imageio.imread('./tmp.png'))
+        images.append(Image.fromarray(np.asarray(Image.open('./tmp.png'))))
     plt.close()
     os.remove('./tmp.png')
+
+    fps = 10
 
     if out_path is not None:
         if not out_path.endswith('gif'):
             out_path = out_path + '.gif'
-        imageio.mimsave(out_path, images)
-
+        images[0].save(out_path, save_all=True, append_images=images[1:], optimize=False, duration=int(1/fps*len(images)), loop=0)
+    return images
 
 def show_video_gif_single(data, out_path=None, use_rgb=False):
     """generate gif with a video sequence"""

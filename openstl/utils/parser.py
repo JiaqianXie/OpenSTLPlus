@@ -25,7 +25,7 @@ def create_parser():
                         help='Whether to set different seeds for different ranks')
     parser.add_argument('--fps', action='store_true', default=False,
                         help='Whether to measure inference speed (FPS)')
-    parser.add_argument('--empty_cache', action='store_true', default=True,
+    parser.add_argument('--empty_cache', action='store_true', default=False,
                         help='Whether to empty cuda cache after GPU training')
     parser.add_argument('--find_unused_parameters', action='store_true', default=False,
                         help='Whether to find unused parameters in forward during DDP training')
@@ -137,7 +137,7 @@ def default_parser():
         'seed': 42,
         'diff_seed': False,
         'fps': False,
-        'empty_cache': True,
+        'empty_cache': False,
         'find_unused_parameters': False,
         'broadcast_buffers': True,
         'resume_from': None,
