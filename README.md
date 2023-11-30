@@ -6,8 +6,8 @@
 
 ### Update from Yang
 
-- added save best checkpoint hook. Usage: add `save_best_hook = dict()` in your config file. Parameters: metrics=["mse", "mae"], save_lowest=True
-- added wandb loggin hook. Usage: add `wandb_hook = dict()` in your config file, and then execute wandb login to initialise your wandb sesion in your hose machine. Parameters: None.
+- added save best checkpoint hook. Usage: add `save_best_hook = dict()` in your config file. Parameters: `metrics=["mse", "mae"], save_lowest=True`
+- added wandb logging hook. Usage: add `wandb_hook = dict()` in your config file, and then run `wandb login` to initialise your wandb sesion on your host mahine. Parameters: None.
 
 <p align="left">
 <a href="https://arxiv.org/abs/2306.11249" alt="arXiv">
