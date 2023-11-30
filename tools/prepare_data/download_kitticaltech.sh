@@ -12,7 +12,7 @@ unzip kitti_data.zip -d kitti_hkl/
 
 wget https://data.caltech.edu/records/f6rph-90m20/files/data_and_labels.zip?download=1 -O caltech_full.zip
 mkdir caltech_full
-unzip caltech_data_and_labels.zip -d caltech_full/
+unzip caltech_full.zip -d caltech_full/
 mv caltech_full/Test caltech
 rm -r caltech_full
 
