@@ -12,3 +12,5 @@ lr = 5e-3
 drop_path = 0.1
 batch_size = 8
 sched = 'onecycle'
+save_best_hook = dict()
+wandb_hook = dict()
