@@ -48,7 +48,7 @@ OpenSTL is a comprehensive benchmark for spatio-temporal predictive learning, en
 <details open>
 <summary>Major Features and Plans</summary>
 
-- **Flexable Code Design.**
+- **Flexible Code Design.**
   OpenSTL decomposes STL algorithms into `methods` (training and prediction), `models` (network architectures), and `modules`, while providing unified experiment API. Users can develop their own STL algorithms with flexible training strategies and networks for different STL tasks.
 
 - **Standard Benchmarks.**
