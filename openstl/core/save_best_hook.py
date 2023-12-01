@@ -1,4 +1,3 @@
-import warnings
 from .hooks import Hook
 from openstl.utils import weights_to_cpu
 import torch

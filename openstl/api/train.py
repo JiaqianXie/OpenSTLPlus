@@ -17,13 +17,11 @@ from openstl.methods import method_maps
 from openstl.utils import (set_seed, print_log, output_namespace, check_dir, collect_env,
                            init_dist, init_random_seed,
                            get_dataset, get_dist_info, measure_throughput, weights_to_cpu)
-import pickle as pkl
-import wandb
 
 try:
     import nni
     has_nni = True
-except ImportError: 
+except ImportError:
     has_nni = False
 
 
@@ -37,7 +35,8 @@ class BaseExperiment(object):
         self.device = self.args.device
         self.method = None
         self.args.method = self.args.method.lower()
-        self._epoch = 0
+        self.current_epoch = 0
+        self.epoch = 0
         self._iter = 0
         self._inner_iter = 0
         self._max_epochs = self.config['epoch']
@@ -217,7 +216,7 @@ class BaseExperiment(object):
     def _save(self, name=''):
         """Saving models and meta data to checkpoints"""
         checkpoint = {
-            'epoch': self._epoch + 1,
+            'epoch': self.epoch + 1,
             'optimizer': self.method.model_optim.state_dict(),
             'state_dict': weights_to_cpu(self.method.model.state_dict()) \
                 if not self._dist else weights_to_cpu(self.method.model.module.state_dict()),
@@ -236,7 +235,7 @@ class BaseExperiment(object):
             raise RuntimeError(f'No state_dict found in checkpoint file {filename}')
         self._load_from_state_dict(checkpoint['state_dict'])
         if checkpoint.get('epoch', None) is not None:
-            self._epoch = checkpoint['epoch']
+            self.epoch = checkpoint['epoch']
             self.method.model_optim.load_state_dict(checkpoint['optimizer'])
             self.method.scheduler.load_state_dict(checkpoint['scheduler'])
 
@@ -295,12 +294,12 @@ class BaseExperiment(object):
     def train(self):
         """Training loops of STL methods"""
         recorder = Recorder(verbose=True, early_stop_time=min(self._max_epochs // 10, 10))
-        num_updates = self._epoch * self.steps_per_epoch
+        num_updates = self.epoch * self.steps_per_epoch
         early_stop = False
         self.call_hook('before_train_epoch')
 
         eta = 1.0  # PredRNN variants
-        for epoch in range(self._epoch, self._max_epochs):
+        for epoch in range(self.epoch, self._max_epochs):
             if self._dist and hasattr(self.train_loader.sampler, 'set_epoch'):
                 self.train_loader.sampler.set_epoch(epoch)
 
@@ -308,7 +307,7 @@ class BaseExperiment(object):
                                                                       epoch, num_updates, eta)
             self.train_loss = loss_mean
             self.call_hook("after_train_epoch")
-            self._epoch = epoch
+            self.epoch = epoch
             if epoch % self.args.log_step == 0:
                 cur_lr = self.method.current_lr()
                 cur_lr = sum(cur_lr) / len(cur_lr)
@@ -327,7 +326,7 @@ class BaseExperiment(object):
 
         if not check_dir(self.path):  # exit training when work_dir is removed
             assert False and "Exit training because work_dir is removed"
-        best_model_path = osp.join(self.path, 'checkpoint.pth')
+        best_model_path = osp.join(self.checkpoints_path, 'best_model.pth')
         self._load_from_state_dict(torch.load(best_model_path))
         time.sleep(1)  # wait for some hooks like loggers to finish
         self.call_hook('after_run')
@@ -351,9 +350,10 @@ class BaseExperiment(object):
     def test(self):
         """A testing loop of STL methods"""
         if self.args.test:
-            best_model_path = osp.join(self.path, 'checkpoint.pth')
+            best_model_path = osp.join(self.checkpoints_path, 'best_model.pth')
             self._load_from_state_dict(torch.load(best_model_path))
 
+        # release unnecessary data loaded in the memory
         del self.train_loader
         del self.vali_loader
 
@@ -362,9 +362,6 @@ class BaseExperiment(object):
         if self._rank == 0:
             folder_path = osp.join(self.path, 'saved')
             check_dir(folder_path)
-            with open(os.path.join(folder_path, "intermediate_results.pkl"), "wb") as output:
-                pkl.dump(results, output)
-            print("intermediate results saved.")
         self.call_hook('after_val_epoch')
 
         if 'weather' in self.args.dataname:
@@ -388,8 +385,8 @@ class BaseExperiment(object):
         return eval_res['mse']
 
     def inference(self):
-        """A inference loop of STL methods"""
-        best_model_path = osp.join(self.path, 'checkpoint.pth')
+        """An inference loop of STL methods"""
+        best_model_path = osp.join(self.checkpoints_path, 'best_model.pth')
         self._load_from_state_dict(torch.load(best_model_path))
 
         self.call_hook('before_val_epoch')

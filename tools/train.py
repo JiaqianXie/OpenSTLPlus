@@ -11,7 +11,7 @@ from openstl.utils import (create_parser, default_parser, get_dist_info, load_co
 try:
     import nni
     has_nni = True
-except ImportError: 
+except ImportError:
     has_nni = False
 
 

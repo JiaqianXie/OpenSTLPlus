@@ -8,8 +8,11 @@
 
 ## New Update
 
-- added save best checkpoint hook. Usage: add `save_best_hook = dict()` in your config file. Parameters: `metrics=["mse", "mae"], save_lowest=True`
-- added wandb logging hook. Usage: add `wandb_hook = dict()` in your config file, and then run `wandb login` to initialise your wandb sesion on your host mahine. Parameters: None.
+- added save best checkpoint hook. Usage: add `save_best_hook = dict()` in your config file. Parameters: 
+  - `metrics=["mse", "mae"]`: Specify a list of metrics to determine the best checkpoint.
+  - `save_lowest=True`: Set this parameter to `True` to save the checkpoint with the lowest sum of metrics, or `False` to save the one with the highest sum.
+- added wandb logging hook. Usage: add `wandb_hook = dict()` in your config file. Ensure you have initialised your WandB session on your host machine by running `wandb login`. Parameters: 
+  - `metric_config={"mse":"min", "mae":"min"})`: Define the recording criteria for specific metrics. Here, `min` denotes recording the minimal value, while `max` records the maximum value for the specified metric. 
 
 ## New Installation
 To install all the required packages, in OpenSTLPlus repo you can run `./build_env.sh`. This will create a conda env named `openstlplus` in your system.

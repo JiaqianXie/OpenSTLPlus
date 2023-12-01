@@ -14,4 +14,5 @@ coef = 0.5
 lr = 1e-4
 batch_size = 16
 sched = 'onecycle'
-save_best_hook = dict()
+save_best_hook = dict(priority='ABOVE_NORMAL')
+wandb_hook = dict(priority='ABOVE_NORMAL')
