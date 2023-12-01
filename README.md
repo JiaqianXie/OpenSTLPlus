@@ -4,10 +4,15 @@
 
 # OpenSTL: A Comprehensive Benchmark of Spatio-Temporal Predictive Learning
 
-### Update from Yang
+
+
+## New Update
 
 - added save best checkpoint hook. Usage: add `save_best_hook = dict()` in your config file. Parameters: `metrics=["mse", "mae"], save_lowest=True`
 - added wandb logging hook. Usage: add `wandb_hook = dict()` in your config file, and then run `wandb login` to initialise your wandb sesion on your host mahine. Parameters: None.
+
+## New Installation
+To install all the required packages, in OpenSTLPlus repo you can run `./build_env.sh`. This will create a conda env named `openstlplus` in your system.
 
 <p align="left">
 <a href="https://arxiv.org/abs/2306.11249" alt="arXiv">
