@@ -327,7 +327,8 @@ class BaseExperiment(object):
         if not check_dir(self.path):  # exit training when work_dir is removed
             assert False and "Exit training because work_dir is removed"
         best_model_path = osp.join(self.checkpoints_path, 'best_model.pth')
-        self._load_from_state_dict(torch.load(best_model_path))
+        best_model_checkpoint = torch.load(best_model_path)
+        self._load_from_state_dict(best_model_checkpoint["state_dict"])
         time.sleep(1)  # wait for some hooks like loggers to finish
         self.call_hook('after_run')
 
@@ -351,7 +352,8 @@ class BaseExperiment(object):
         """A testing loop of STL methods"""
         if self.args.test:
             best_model_path = osp.join(self.checkpoints_path, 'best_model.pth')
-            self._load_from_state_dict(torch.load(best_model_path))
+            best_model_checkpoint = torch.load(best_model_path)
+            self._load_from_state_dict(best_model_checkpoint["state_dict"])
 
         # release unnecessary data loaded in the memory
         del self.train_loader
@@ -362,7 +364,7 @@ class BaseExperiment(object):
         if self._rank == 0:
             folder_path = osp.join(self.path, 'saved')
             check_dir(folder_path)
-        self.call_hook('after_val_epoch')
+        self.call_hook('after_test_epoch')
 
         if 'weather' in self.args.dataname:
             metric_list, spatial_norm = self.args.metrics, True
@@ -387,11 +389,12 @@ class BaseExperiment(object):
     def inference(self):
         """An inference loop of STL methods"""
         best_model_path = osp.join(self.checkpoints_path, 'best_model.pth')
-        self._load_from_state_dict(torch.load(best_model_path))
+        best_model_checkpoint = torch.load(best_model_path)
+        self._load_from_state_dict(best_model_checkpoint["state_dict"])
 
         self.call_hook('before_val_epoch')
         results = self.method.test_one_epoch(self, self.test_loader)
-        self.call_hook('after_val_epoch')
+        self.call_hook('after_test_epoch')
 
         if self._rank == 0:
             folder_path = osp.join(self.path, 'saved')

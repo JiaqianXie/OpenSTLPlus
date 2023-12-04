@@ -7,7 +7,7 @@ class Hook:
 
     stages = ('before_run', 'before_train_epoch', 'before_train_iter',
               'after_train_iter', 'after_train_epoch', 'before_val_epoch',
-              'before_val_iter', 'after_val_iter', 'after_val_epoch',
+              'before_val_iter', 'after_val_iter', 'after_val_epoch', 'after_test_epoch',
               'after_run')
 
     def before_run(self, runner):
@@ -38,6 +38,9 @@ class Hook:
         self.after_epoch(runner)
 
     def after_val_epoch(self, runner):
+        self.after_epoch(runner)
+
+    def after_test_epoch(self, runner):
         self.after_epoch(runner)
 
     def before_train_iter(self, runner):
@@ -74,7 +77,7 @@ class Hook:
         # use this dict to map method to stages.
         method_stages_map = {
             'before_epoch': ['before_train_epoch', 'before_val_epoch'],
-            'after_epoch': ['after_train_epoch', 'after_val_epoch'],
+            'after_epoch': ['after_train_epoch', 'after_val_epoch', 'after_test_epoch'],
             'before_iter': ['before_train_iter', 'before_val_iter'],
             'after_iter': ['after_train_iter', 'after_val_iter'],
         }
