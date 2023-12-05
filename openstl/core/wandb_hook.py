@@ -10,7 +10,7 @@ class WandBHook(Hook):
     def init_wandb(self, name, config, val_result):
         self.run = wandb.init(
             # set the wandb project where this run will be logged
-            project="video-prediction",
+            project=config['project'],
             name=name,
             # track hyperparameters and run metadata
             config=config
@@ -37,5 +37,5 @@ class WandBHook(Hook):
                 log["val_loss"] = value.mean()
             else:
                 log[key] = value.mean()
-        print(log)
+        # print(log)
         wandb.log(log)
