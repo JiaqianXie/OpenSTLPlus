@@ -27,6 +27,12 @@ class SimVP_Model(nn.Module):
         model_type = 'gsta' if model_type is None else model_type.lower()
         if model_type == 'incepu':
             self.hid = MidIncepNet(T*hid_S, hid_T, N_T)
+        elif model_type == 'incepu-weight-sharing':
+            self.hid = MidIncepNet(T * hid_S, hid_T, N_T, weight_sharing=True)
+        elif model_type == 'gsta-weight-sharing':
+            self.hid = MidMetaNet(T * hid_S, hid_T, N_T,
+              input_resolution=(H, W), model_type=model_type,
+              mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path, weight_sharing=True)
         else:
             self.hid = MidMetaNet(T*hid_S, hid_T, N_T,
                 input_resolution=(H, W), model_type=model_type,
@@ -101,16 +107,26 @@ class Decoder(nn.Module):
 class MidIncepNet(nn.Module):
     """The hidden Translator of IncepNet for SimVPv1"""
 
-    def __init__(self, channel_in, channel_hid, N2, incep_ker=[3,5,7,11], groups=8, **kwargs):
+    def __init__(self, channel_in, channel_hid, N2, incep_ker=[3,5,7,11], groups=8, weight_sharing=False, **kwargs):
         super(MidIncepNet, self).__init__()
         assert N2 >= 2 and len(incep_ker) > 1
         self.N2 = N2
+        self.weight_sharing = weight_sharing
+        if weight_sharing:
+            enc_layer = gInception_ST(channel_hid, channel_hid//2, channel_hid,
+                              incep_ker=incep_ker, groups=groups)
+            dec_layer = gInception_ST(2*channel_hid, channel_hid//2, channel_hid,
+                                incep_ker=incep_ker, groups=groups)
+
         enc_layers = [gInception_ST(
             channel_in, channel_hid//2, channel_hid, incep_ker= incep_ker, groups=groups)]
         for i in range(1,N2-1):
-            enc_layers.append(
-                gInception_ST(channel_hid, channel_hid//2, channel_hid,
-                              incep_ker=incep_ker, groups=groups))
+            if weight_sharing:
+                enc_layers.append(enc_layer)
+            else:
+                enc_layers.append(
+                    gInception_ST(channel_hid, channel_hid//2, channel_hid,
+                                incep_ker=incep_ker, groups=groups))
         enc_layers.append(
                 gInception_ST(channel_hid, channel_hid//2, channel_hid,
                               incep_ker=incep_ker, groups=groups))
@@ -118,9 +134,12 @@ class MidIncepNet(nn.Module):
                 gInception_ST(channel_hid, channel_hid//2, channel_hid,
                               incep_ker=incep_ker, groups=groups)]
         for i in range(1,N2-1):
-            dec_layers.append(
-                gInception_ST(2*channel_hid, channel_hid//2, channel_hid,
-                              incep_ker=incep_ker, groups=groups))
+            if weight_sharing:
+                dec_layers.append(dec_layer)
+            else:
+                dec_layers.append(
+                    gInception_ST(2*channel_hid, channel_hid//2, channel_hid,
+                                incep_ker=incep_ker, groups=groups))
         dec_layers.append(
                 gInception_ST(2*channel_hid, channel_hid//2, channel_in,
                               incep_ker=incep_ker, groups=groups))
@@ -140,11 +159,18 @@ class MidIncepNet(nn.Module):
             if i < self.N2-1:
                 skips.append(z)
         # decoder
+        layer_features = []
         z = self.dec[0](z)
         for i in range(1,self.N2):
-            z = self.dec[i](torch.cat([z, skips[-i]], dim=1) )
+            z = self.dec[i](torch.cat([z, skips[-i]], dim=1))
+            layer_features.append(z)
 
-        y = z.reshape(B, T, C, H, W)
+        if self.weight_sharing:
+            # y = torch.mean(layer_features, dim=1)
+            y = z.reshape(B, T, C, H, W)
+        else:
+            y = z.reshape(B, T, C, H, W)
+
         return y
 
 
@@ -214,10 +240,11 @@ class MidMetaNet(nn.Module):
 
     def __init__(self, channel_in, channel_hid, N2,
                  input_resolution=None, model_type=None,
-                 mlp_ratio=4., drop=0.0, drop_path=0.1):
+                 mlp_ratio=4., drop=0.0, drop_path=0.1, weight_sharing=False):
         super(MidMetaNet, self).__init__()
         assert N2 >= 2 and mlp_ratio > 1
         self.N2 = N2
+        self.weight_sharing = weight_sharing
         dpr = [  # stochastic depth decay rule
             x.item() for x in torch.linspace(1e-2, drop_path, self.N2)]
 

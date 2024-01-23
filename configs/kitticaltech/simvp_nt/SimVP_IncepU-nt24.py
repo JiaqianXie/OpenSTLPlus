@@ -1,21 +1,20 @@
 method = 'SimVP'
-project='openstl'
+project="video-prediction"
 # model
 spatio_kernel_enc = 3
 spatio_kernel_dec = 3
-model_type = 'gSTA'
+model_type = 'IncepU'  # SimVP.V1
 hid_S = 128
 hid_T = 1024
 N_T = 24
-N_S = 4
+N_S = 2
 # training
 lr = 5e-4
-batch_size = 8
-drop_path = 0
-sched = 'cosine'
-warmup_lr = 0.0
-warmup_epoch = 20
-min_lr = 1e-5
+drop_path = 0.1
+batch_size = 4
+val_batch_size = 4
+sched = 'onecycle'
 epoch = 200
 save_best_hook = dict()
 wandb_hook = dict()
+

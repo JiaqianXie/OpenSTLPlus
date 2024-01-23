@@ -1,4 +1,5 @@
 method = 'DMVFN'
+project='openstl'
 # model
 routing_out_channels = 32
 in_planes = 4 * 1 + 1 + 4 # the first 1: data channel, the second 1: mask channel, the third 4: flow channel
@@ -11,8 +12,12 @@ beta = 0.5
 gamma = 0.8
 coef = 0.5
 # training
-lr = 1e-4
-batch_size = 16
-sched = 'onecycle'
+batch_size = 128
+sched = 'cosine'
+warmup_lr = 1e-5
+warmup_epoch = 50
+min_lr = 1e-5
+epoch = 200
+
 save_best_hook = dict(priority='ABOVE_NORMAL')
 wandb_hook = dict(priority='ABOVE_NORMAL')

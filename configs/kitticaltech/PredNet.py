@@ -1,4 +1,5 @@
 method = 'PredNet'
+project="video-prediction"
 stack_sizes = (3, 32, 64, 128, 256) # 1 refer to num of channel(input)
 R_stack_sizes = stack_sizes
 A_filt_sizes = (3, 3, 3, 3)
@@ -14,3 +15,5 @@ LSTM_inner_activation = 'hard_sigmoid'
 lr = 1e-3
 batch_size = 16
 sched = 'onecycle'
+save_best_hook = dict()
+wandb_hook = dict()

@@ -1,4 +1,5 @@
 method = 'DMVFN'
+project='video-prediction'
 # model
 routing_out_channels = 32
 in_planes = 4 * 3 + 1 + 4 # the first 1: data channel, the second 1: mask channel, the third 4: flow channel
@@ -15,6 +16,5 @@ lr = 5e-4
 batch_size = 16
 sched = 'onecycle'
 epoch=250
-# ema_hook = dict(momentum=1e-4, priority='ABOVE_NORMAL')
-save_best_hook = dict(priority='ABOVE_NORMAL')
-wandb_hook = dict(priority='ABOVE_NORMAL')
+save_best_hook = dict()
+wandb_hook = dict()

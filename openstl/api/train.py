@@ -352,6 +352,7 @@ class BaseExperiment(object):
         """A testing loop of STL methods"""
         if self.args.test:
             best_model_path = osp.join(self.checkpoints_path, 'best_model.pth')
+            print("Loaded best model from {}".format(best_model_path))
             best_model_checkpoint = torch.load(best_model_path)
             self._load_from_state_dict(best_model_checkpoint["state_dict"])
 
