@@ -1,10 +1,12 @@
 import torch
 from torch import nn
 
-from openstl.modules import (ConvSC, ConvNeXtSubBlock, ConvMixerSubBlock, GASubBlock, gInception_ST,
+from OpenSTLPlus.openstl.modules import (ConvSC, ConvNeXtSubBlock, ConvMixerSubBlock, GASubBlock, gInception_ST,
                              HorNetSubBlock, MLPMixerSubBlock, MogaSubBlock, PoolFormerSubBlock,
                              SwinSubBlock, UniformerSubBlock, VANSubBlock, ViTSubBlock, TAUSubBlock)
 
+from OpenSTLPlus.openstl.modules.layers import MixMlp
+from OpenSTLPlus.openstl.modules.simvp_modules import SpatialAttention
 
 class SimVP_Model(nn.Module):
     r"""SimVP Model
@@ -178,16 +180,17 @@ class MetaBlock(nn.Module):
     """The hidden Translator of MetaFormer for SimVP"""
 
     def __init__(self, in_channels, out_channels, input_resolution=None, model_type=None,
-                 mlp_ratio=8., drop=0.0, drop_path=0.0, layer_i=0):
+                 mlp_ratio=8., drop=0.0, drop_path=0.0, layer_i=0, weight_sharing=False, weight_sharing_params=None):
         super(MetaBlock, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         model_type = model_type.lower() if model_type is not None else 'gsta'
 
-        if model_type == 'gsta':
+        if model_type in ['gsta', 'gsta-weight-sharing']:
             self.block = GASubBlock(
                 in_channels, kernel_size=21, mlp_ratio=mlp_ratio,
-                drop=drop, drop_path=drop_path, act_layer=nn.GELU)
+                drop=drop, drop_path=drop_path, act_layer=nn.GELU, weight_sharing=weight_sharing,
+                weight_sharing_params=weight_sharing_params)
         elif model_type == 'convmixer':
             self.block = ConvMixerSubBlock(in_channels, kernel_size=11, activation=nn.GELU)
         elif model_type == 'convnext':
@@ -248,6 +251,17 @@ class MidMetaNet(nn.Module):
         dpr = [  # stochastic depth decay rule
             x.item() for x in torch.linspace(1e-2, drop_path, self.N2)]
 
+        if weight_sharing:
+            mlp_hidden_dim = int(channel_hid * mlp_ratio)
+            weight_sharing_params = dict(
+                norm1 = nn.BatchNorm2d(channel_hid),
+                attn = SpatialAttention(channel_hid, kernel_size=21),
+                norm2 = nn.BatchNorm2d(channel_hid),
+                mlp = MixMlp(in_features=channel_hid, hidden_features=mlp_hidden_dim, act_layer=nn.GELU, drop=drop)
+            )
+        else:
+            weight_sharing_params = None
+
         # downsample
         enc_layers = [MetaBlock(
             channel_in, channel_hid, input_resolution, model_type,
@@ -256,7 +270,8 @@ class MidMetaNet(nn.Module):
         for i in range(1, N2-1):
             enc_layers.append(MetaBlock(
                 channel_hid, channel_hid, input_resolution, model_type,
-                mlp_ratio, drop, drop_path=dpr[i], layer_i=i))
+                mlp_ratio, drop, drop_path=dpr[i], layer_i=i, weight_sharing=weight_sharing,
+                weight_sharing_params=weight_sharing_params))
         # upsample
         enc_layers.append(MetaBlock(
             channel_hid, channel_in, input_resolution, model_type,
