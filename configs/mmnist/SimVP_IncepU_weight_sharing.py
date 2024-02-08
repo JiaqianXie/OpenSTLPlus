@@ -1,4 +1,5 @@
 method = 'SimVP'
+project='openstl'
 # model
 model_type = 'IncepU-weight-sharing'
 spatio_kernel_enc = 3

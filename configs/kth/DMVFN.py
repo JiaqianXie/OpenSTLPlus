@@ -1,4 +1,5 @@
 method = 'DMVFN'
+project='openstl'
 # model
 routing_out_channels = 32
 in_planes = 4 * 1 + 1 + 4 # the first 1: data channel, the second 1: mask channel, the third 4: flow channel
@@ -14,3 +15,5 @@ coef = 0.5
 lr = 5e-5
 batch_size = 16
 sched = 'onecycle'
+save_best_hook = dict()
+wandb_hook = dict()

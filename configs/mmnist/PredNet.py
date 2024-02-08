@@ -1,4 +1,5 @@
 method = 'PredNet'
+project='openstl'
 stack_sizes = (1, 32, 64, 128, 256) # 1 refer to num of channel(input)
 R_stack_sizes = stack_sizes
 A_filt_sizes = (3, 3, 3, 3)
@@ -11,6 +12,11 @@ A_activation = 'relu'
 LSTM_activation = 'tanh'
 LSTM_inner_activation = 'hard_sigmoid'
 # training
-lr = 1e-4
-batch_size = 16
-sched = 'onecycle'
+lr =1e-3
+batch_size = 32
+sched = 'multistep'
+warmup_lr = 1e-4
+warmup_epoch= 20
+
+save_best_hook = dict()
+wandb_hook = dict()

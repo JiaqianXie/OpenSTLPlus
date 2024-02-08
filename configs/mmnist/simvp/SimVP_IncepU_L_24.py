@@ -9,10 +9,10 @@ hid_T = 1024
 N_T = 24
 N_S = 4
 # training
-lr = 1e-3
+lr = 1e-4
 batch_size = 16
 sched = 'onecycle'
-epoch = 200
-save_best_hook = dict()
-wandb_hook = dict()
 
+# ema_hook = dict(momentum=1e-4, priority='ABOVE_NORMAL')
+save_best_hook = dict(priority='ABOVE_NORMAL')
+wandb_hook = dict(priority='ABOVE_NORMAL')
