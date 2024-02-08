@@ -6,6 +6,12 @@ import argparse
 def create_parser():
     parser = argparse.ArgumentParser(
         description='OpenSTL train/test a model')
+
+    parser.add_argument('dataname', type=str, help='Dataset name')
+
+    parser.add_argument('config_file', type=str, help='Path to the default config file')
+
+
     # Set-up parameters
     parser.add_argument('--device', default='cuda', type=str,
                         help='Name of device to use for tensor computations (cuda/cpu)')
@@ -50,8 +56,7 @@ def create_parser():
     parser.add_argument('--val_batch_size', '-vb', default=16, type=int, help='Validation batch size')
     parser.add_argument('--num_workers', default=4, type=int)
     parser.add_argument('--data_root', default='./data')
-    parser.add_argument('--dataname', '-d', default='mmnist', type=str,
-                        help='Dataset name (default: "mmnist")')
+
     parser.add_argument('--pre_seq_length', default=None, type=int, help='Sequence length before prediction')
     parser.add_argument('--aft_seq_length', default=None, type=int, help='Sequence length after prediction')
     parser.add_argument('--total_length', default=None, type=int, help='Total Sequence length for prediction')
@@ -69,8 +74,6 @@ def create_parser():
                                  'PredRNN', 'predrnn', 'PredRNNpp', 'predrnnpp', 'PredRNNv2', 'predrnnv2',
                                  'SimVP', 'simvp', 'TAU', 'tau'],
                         help='Name of video prediction method to train (default: "SimVP")')
-    parser.add_argument('--config_file', '-c', default='configs/mmnist/simvp/SimVP_gSTA.py', type=str,
-                        help='Path to the default config file')
     parser.add_argument('--model_type', default=None, type=str,
                         help='Name of model for SimVP (default: None)')
     parser.add_argument('--drop', type=float, default=0.0, help='Dropout rate(default: 0.)')
