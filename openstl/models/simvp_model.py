@@ -1,12 +1,12 @@
 import torch
 from torch import nn
 
-from OpenSTLPlus.openstl.modules import (ConvSC, ConvNeXtSubBlock, ConvMixerSubBlock, GASubBlock, gInception_ST,
+from ..modules import (ConvSC, ConvNeXtSubBlock, ConvMixerSubBlock, GASubBlock, gInception_ST,
                              HorNetSubBlock, MLPMixerSubBlock, MogaSubBlock, PoolFormerSubBlock,
                              SwinSubBlock, UniformerSubBlock, VANSubBlock, ViTSubBlock, TAUSubBlock)
 
-from OpenSTLPlus.openstl.modules.layers import MixMlp
-from OpenSTLPlus.openstl.modules.simvp_modules import SpatialAttention
+from ..modules.layers import MixMlp
+from ..modules.simvp_modules import SpatialAttention
 
 class SimVP_Model(nn.Module):
     r"""SimVP Model
