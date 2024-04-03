@@ -7,6 +7,7 @@ from ..modules import (ConvSC, ConvNeXtSubBlock, ConvMixerSubBlock, GASubBlock, 
 
 from ..modules.layers import MixMlp
 from ..modules.simvp_modules import SpatialAttention
+from openstl.modules import Routing, MVFB, RoundSTE, warp
 
 class SimVP_Model(nn.Module):
     r"""SimVP Model
@@ -18,7 +19,7 @@ class SimVP_Model(nn.Module):
 
     def __init__(self, in_shape, hid_S=16, hid_T=256, N_S=4, N_T=4, model_type='gSTA',
                  mlp_ratio=8., drop=0.0, drop_path=0.0, spatio_kernel_enc=3,
-                 spatio_kernel_dec=3, act_inplace=True, **kwargs):
+                 spatio_kernel_dec=3, act_inplace=True, routing_out_channels=None, routing_beta=None, **kwargs):
         super(SimVP_Model, self).__init__()
         T, C, H, W = in_shape  # T is pre_seq_length
         H, W = int(H / 2**(N_S/2)), int(W / 2**(N_S/2))  # downsample 1 / 2**(N_S/2)
@@ -35,6 +36,11 @@ class SimVP_Model(nn.Module):
             self.hid = MidMetaNet(T * hid_S, hid_T, N_T,
               input_resolution=(H, W), model_type=model_type,
               mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path, weight_sharing=True)
+        elif model_type == 'tau-dynamic-routing':
+            self.hid = MidMetaNet(T * hid_S, hid_T, N_T,
+              input_resolution=(H, W), model_type=model_type,
+              mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path, dynamic_routing=True, input_channels=C,
+                                  routing_out_channels=routing_out_channels, routing_beta=routing_beta)
         else:
             self.hid = MidMetaNet(T*hid_S, hid_T, N_T,
                 input_resolution=(H, W), model_type=model_type,
@@ -66,9 +72,10 @@ def sampling_generator(N, reverse=False):
 class Encoder(nn.Module):
     """3D Encoder for SimVP"""
 
-    def __init__(self, C_in, C_hid, N_S, spatio_kernel, act_inplace=True):
+    def __init__(self, C_in, C_hid, N_S, spatio_kernel, act_inplace=True, weight_sharing=False):
         samplings = sampling_generator(N_S)
         super(Encoder, self).__init__()
+
         self.enc = nn.Sequential(
               ConvSC(C_in, C_hid, spatio_kernel, downsampling=samplings[0],
                      act_inplace=act_inplace),
@@ -87,7 +94,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     """3D Decoder for SimVP"""
 
-    def __init__(self, C_hid, C_out, N_S, spatio_kernel, act_inplace=True):
+    def __init__(self, C_hid, C_out, N_S, spatio_kernel, act_inplace=True, weight_sharing=False):
         samplings = sampling_generator(N_S, reverse=True)
         super(Decoder, self).__init__()
         self.dec = nn.Sequential(
@@ -180,7 +187,8 @@ class MetaBlock(nn.Module):
     """The hidden Translator of MetaFormer for SimVP"""
 
     def __init__(self, in_channels, out_channels, input_resolution=None, model_type=None,
-                 mlp_ratio=8., drop=0.0, drop_path=0.0, layer_i=0, weight_sharing=False, weight_sharing_params=None):
+                 mlp_ratio=8., drop=0.0, drop_path=0.0, layer_i=0, weight_sharing=False, weight_sharing_params=None,
+                 ):
         super(MetaBlock, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -222,7 +230,7 @@ class MetaBlock(nn.Module):
         elif model_type == 'vit':
             self.block = ViTSubBlock(
                 in_channels, mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path)
-        elif model_type == 'tau':
+        elif model_type == 'tau' or model_type == 'tau-dynamic-routing':
             self.block = TAUSubBlock(
                 in_channels, kernel_size=21, mlp_ratio=mlp_ratio,
                 drop=drop, drop_path=drop_path, act_layer=nn.GELU)
@@ -233,9 +241,17 @@ class MetaBlock(nn.Module):
             self.reduction = nn.Conv2d(
                 in_channels, out_channels, kernel_size=1, stride=1, padding=0)
 
-    def forward(self, x):
+    def forward(self, x, ref=None):
         z = self.block(x)
-        return z if self.in_channels == self.out_channels else self.reduction(z)
+        if self.in_channels != self.out_channels:
+            z = self.reduction(z)
+            x = self.reduction(x)
+        if ref is not None:
+            print(ref)
+            prev_curr_states = torch.stack((x, z), dim=1)
+            routed_states = prev_curr_states[torch.arange(x.shape[0]), ref.view(-1)]
+            z = routed_states
+        return z
 
 
 class MidMetaNet(nn.Module):
@@ -243,11 +259,14 @@ class MidMetaNet(nn.Module):
 
     def __init__(self, channel_in, channel_hid, N2,
                  input_resolution=None, model_type=None,
-                 mlp_ratio=4., drop=0.0, drop_path=0.1, weight_sharing=False):
+                 mlp_ratio=4., drop=0.0, drop_path=0.1, weight_sharing=False, dynamic_routing=False, routing_beta=None,
+                 input_channels=None, routing_out_channels=None):
         super(MidMetaNet, self).__init__()
         assert N2 >= 2 and mlp_ratio > 1
         self.N2 = N2
+        self.routing_beta = routing_beta
         self.weight_sharing = weight_sharing
+        self.dynamic_routing = dynamic_routing
         dpr = [  # stochastic depth decay rule
             x.item() for x in torch.linspace(1e-2, drop_path, self.N2)]
 
@@ -261,6 +280,11 @@ class MidMetaNet(nn.Module):
             )
         else:
             weight_sharing_params = None
+
+        if self.dynamic_routing:
+            self.routing = Routing(2*input_channels, routing_out_channels)
+            self.input_channels = input_channels
+            self.l1 = nn.Linear(routing_out_channels, N2)
 
         # downsample
         enc_layers = [MetaBlock(
@@ -280,11 +304,27 @@ class MidMetaNet(nn.Module):
 
     def forward(self, x):
         B, T, C, H, W = x.shape
-        x = x.reshape(B, T*C, H, W)
+        x = x.reshape(B, T * C, H, W)
+        if self.dynamic_routing:
+            # routing vector shape [batchsize, num_blocks]
+            ref = self.get_routing_vector(x)
+            ref = ref.long()
 
         z = x
         for i in range(self.N2):
-            z = self.enc[i](z)
+            if self.dynamic_routing:
+                z = self.enc[i](z, ref[:, i])
+            else:
+                z = self.enc[i](z)
 
         y = z.reshape(B, T, C, H, W)
         return y
+
+    def get_routing_vector(self, x):
+        routing_vector = self.routing(x[:, :2*self.input_channels]).reshape(x.shape[0], -1)
+        routing_vector = torch.sigmoid(self.l1(routing_vector))
+        routing_vector = self.routing_beta * self.N2 * \
+                         routing_vector / (routing_vector.sum(1, True) + 1e-6)
+        routing_vector = torch.clamp(routing_vector, 0, 1)
+        ref = RoundSTE.apply(routing_vector)
+        return ref

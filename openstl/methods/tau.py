@@ -9,8 +9,6 @@ from openstl.models import SimVP_Model
 from openstl.utils import reduce_tensor
 from .simvp import SimVP
 
-
-
 class TAU(SimVP):
     r"""TAU
 

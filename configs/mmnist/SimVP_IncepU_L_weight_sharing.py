@@ -1,5 +1,4 @@
 method = 'SimVP'
-project='openstl'
 # model
 model_type = 'IncepU-weight-sharing'
 spatio_kernel_enc = 3
@@ -15,4 +14,3 @@ sched = 'onecycle'
 save_best_hook = dict()
 wandb_hook = dict()
 batch_size = 8
-
