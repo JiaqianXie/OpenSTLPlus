@@ -247,7 +247,7 @@ class MetaBlock(nn.Module):
             z = self.reduction(z)
             x = self.reduction(x)
         if ref is not None:
-            print(ref)
+            # print(ref)
             prev_curr_states = torch.stack((x, z), dim=1)
             routed_states = prev_curr_states[torch.arange(x.shape[0]), ref.view(-1)]
             z = routed_states
