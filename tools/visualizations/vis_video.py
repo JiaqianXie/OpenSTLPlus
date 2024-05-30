@@ -117,18 +117,18 @@ def main():
             show_video_line(trues.copy(), ncols=config['aft_seq_length'], vmax=0.6, cbar=False,
                 out_path='{}/{}_true{}'.format(args.save_dirs, args.dataname+c_surfix, str(idx)+'.png'),
                 format='png', use_rgb=use_rgb)
-            # show_video_gif_single(inputs.copy(), use_rgb=use_rgb,
-            #     out_path='{}/{}_{}_{}_input'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
-            # show_video_gif_single(trues.copy(), use_rgb=use_rgb,
-            #     out_path='{}/{}_{}_{}_true'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+            show_video_gif_single(inputs.copy(), use_rgb=use_rgb,
+                out_path='{}/{}_{}_{}_input'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+            show_video_gif_single(trues.copy(), use_rgb=use_rgb,
+                out_path='{}/{}_{}_{}_true'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
 
         show_video_line(preds, ncols=ncols, vmax=0.6, cbar=False,
                         out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, str(idx)+'.png'),
                         format='png', use_rgb=use_rgb)
-        # show_video_gif_multiple(inputs, trues, preds, use_rgb=use_rgb,
-        #                         out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
-        # show_video_gif_single(preds, use_rgb=use_rgb,
-        #                       out_path='{}/{}_{}_{}_pred'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        show_video_gif_multiple(inputs, trues, preds, use_rgb=use_rgb,
+                                out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        show_video_gif_single(preds, use_rgb=use_rgb,
+                              out_path='{}/{}_{}_{}_pred'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
 
 
 if __name__ == '__main__':
