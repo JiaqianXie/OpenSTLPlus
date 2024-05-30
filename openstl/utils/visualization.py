@@ -167,8 +167,9 @@ def show_video_gif_single(data, out_path=None, use_rgb=False):
         if use_rgb:
             data[i] = cv2.cvtColor(data[i], cv2.COLOR_BGR2RGB)
         image = imageio.core.util.Array(data[i])
-        image = (image * 255).astype(np.float32)
-        image = image.astype(np.uint8)
+        if image.shape[2] == 3:
+            image = (image * 255).astype(np.float32)
+            image = image.astype(np.uint8)
         images.append(image)
 
     if out_path is not None:
