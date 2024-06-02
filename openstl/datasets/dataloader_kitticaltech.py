@@ -173,6 +173,12 @@ def load_data(batch_size, val_batch_size, data_root, num_workers=4,
     else:
         assert False and "Invalid data_root for kitticaltech dataset"
 
+    seq_length = input_param['seq_length']
+    last_train_idx = train_data.shape[0] - seq_length - 1
+    last_test_idx = test_data.shape[0] - seq_length - 1
+    train_idx = [data_idx for data_idx in train_idx if data_idx <= last_train_idx]
+    test_idx = [data_idx for data_idx in test_idx if data_idx <= last_test_idx]
+
     train_set = KittiCaltechDataset(
         train_data, train_idx, pre_seq_length, aft_seq_length, use_augment=use_augment)
     test_set = KittiCaltechDataset(
