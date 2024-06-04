@@ -69,8 +69,8 @@ dataset_parameters = {
     'kitticaltech': {
         'in_shape': [10, 3, 128, 160],
         'pre_seq_length': 10,
-        'aft_seq_length': 20,
-        'total_length': 30,
+        'aft_seq_length': 1,
+        'total_length': 11,
         'metrics': ['mse', 'mae', 'ssim', 'psnr', 'lpips'],
     },
     **dict.fromkeys(['kinetics400', 'kinetics'], {

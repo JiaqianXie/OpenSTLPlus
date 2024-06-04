@@ -36,6 +36,10 @@ class SimVP_Model(nn.Module):
             self.hid = MidMetaNet(T * hid_S, hid_T, N_T,
               input_resolution=(H, W), model_type=model_type,
               mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path, weight_sharing=True)
+        elif model_type == 'gsta-weight-sharing-gru':
+            self.hid = MidMetaNet(T * hid_S, hid_T, N_T,
+              input_resolution=(H, W), model_type=model_type,
+              mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path, weight_sharing=True, weight_sharing_gru=True)
         elif model_type == 'tau-dynamic-routing':
             self.hid = MidMetaNet(T * hid_S, hid_T, N_T,
               input_resolution=(H, W), model_type=model_type,
@@ -72,7 +76,7 @@ def sampling_generator(N, reverse=False):
 class Encoder(nn.Module):
     """3D Encoder for SimVP"""
 
-    def __init__(self, C_in, C_hid, N_S, spatio_kernel, act_inplace=True, weight_sharing=False):
+    def __init__(self, C_in, C_hid, N_S, spatio_kernel, act_inplace=True):
         samplings = sampling_generator(N_S)
         super(Encoder, self).__init__()
 
@@ -94,7 +98,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     """3D Decoder for SimVP"""
 
-    def __init__(self, C_hid, C_out, N_S, spatio_kernel, act_inplace=True, weight_sharing=False):
+    def __init__(self, C_hid, C_out, N_S, spatio_kernel, act_inplace=True):
         samplings = sampling_generator(N_S, reverse=True)
         super(Decoder, self).__init__()
         self.dec = nn.Sequential(
@@ -260,24 +264,29 @@ class MidMetaNet(nn.Module):
     def __init__(self, channel_in, channel_hid, N2,
                  input_resolution=None, model_type=None,
                  mlp_ratio=4., drop=0.0, drop_path=0.1, weight_sharing=False, dynamic_routing=False, routing_beta=None,
-                 input_channels=None, routing_out_channels=None):
+                 input_channels=None, routing_out_channels=None, weight_sharing_gru=False):
         super(MidMetaNet, self).__init__()
         assert N2 >= 2 and mlp_ratio > 1
         self.N2 = N2
         self.routing_beta = routing_beta
         self.weight_sharing = weight_sharing
+        self.weight_sharing_gru = weight_sharing_gru
         self.dynamic_routing = dynamic_routing
+        self.channel_hid = channel_hid
         dpr = [  # stochastic depth decay rule
             x.item() for x in torch.linspace(1e-2, drop_path, self.N2)]
 
         if weight_sharing:
             mlp_hidden_dim = int(channel_hid * mlp_ratio)
             weight_sharing_params = dict(
-                norm1 = nn.BatchNorm2d(channel_hid),
-                attn = SpatialAttention(channel_hid, kernel_size=21),
-                norm2 = nn.BatchNorm2d(channel_hid),
-                mlp = MixMlp(in_features=channel_hid, hidden_features=mlp_hidden_dim, act_layer=nn.GELU, drop=drop)
+                norm1=nn.BatchNorm2d(channel_hid),
+                attn=SpatialAttention(channel_hid, kernel_size=21),
+                norm2=nn.BatchNorm2d(channel_hid),
+                mlp=MixMlp(in_features=channel_hid, hidden_features=mlp_hidden_dim, act_layer=nn.GELU, drop=drop)
             )
+            if weight_sharing_gru:
+                self.gru = nn.GRUCell(channel_hid, channel_hid)
+                self.gru_predictor = nn.Linear(channel_hid, 1)
         else:
             weight_sharing_params = None
 
@@ -311,11 +320,17 @@ class MidMetaNet(nn.Module):
             ref = ref.long()
 
         z = x
-        for i in range(self.N2):
-            if self.dynamic_routing:
-                z = self.enc[i](z, ref[:, i])
-            else:
-                z = self.enc[i](z)
+        if self.weight_sharing_gru:
+            z = self.enc[0](z)
+            gru_ht = torch.zeros(B, self.channel_hid)
+
+            pass
+        else:
+            for i in range(self.N2):
+                if self.dynamic_routing:
+                    z = self.enc[i](z, ref[:, i])
+                else:
+                    z = self.enc[i](z)
 
         y = z.reshape(B, T, C, H, W)
         return y

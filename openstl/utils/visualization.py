@@ -65,7 +65,8 @@ def get_mpl_colormap(cmap_name):
     return color_range.reshape(256, 1, 3)
 
 
-def show_video_line(data, ncols, vmax=0.6, vmin=0.0, cmap='gray', norm=None, cbar=False, format='png', out_path=None, use_rgb=False):
+def show_video_line(data, ncols, vmax=0.6, vmin=0.0, cmap='gray', norm=None, cbar=False, format='png', out_path=None,
+                    pred_length=None, use_rgb=False):
     """generate images with a video sequence"""
     fig, axes = plt.subplots(nrows=1, ncols=ncols, figsize=(3.25 * ncols, 3))
     plt.subplots_adjust(wspace=0.01, hspace=0)
@@ -83,6 +84,9 @@ def show_video_line(data, ncols, vmax=0.6, vmin=0.0, cmap='gray', norm=None, cba
         axes.axis('off')
         im.set_clim(vmin, vmax)
     else:
+        if pred_length is not None:
+            input_length = ncols - pred_length
+            texts = ["input"] * input_length + ["pred"] * pred_length
         for t, ax in enumerate(axes.flat):
             if use_rgb:
                 im = ax.imshow(cv2.cvtColor(data[t], cv2.COLOR_BGR2RGB), cmap='gray')
@@ -91,6 +95,8 @@ def show_video_line(data, ncols, vmax=0.6, vmin=0.0, cmap='gray', norm=None, cba
             images.append(im)
             ax.axis('off')
             im.set_clim(vmin, vmax)
+            if pred_length is not None:
+                ax.text(0.5, 1.10, texts[t], color='black', fontsize=12, ha='center', va='top', transform=ax.transAxes)
 
     if cbar and ncols > 1:
         cbaxes = fig.add_axes([0.9, 0.15, 0.04 / ncols, 0.7]) 
