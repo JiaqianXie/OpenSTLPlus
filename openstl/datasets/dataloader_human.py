@@ -24,7 +24,7 @@ class HumanDataset(Dataset):
     """
 
     def __init__(self, data_root, list_path, image_size=256,
-                 pre_seq_length=4, aft_seq_length=4, step=5, use_augment=False):
+                 pre_seq_length=4, aft_seq_length=4, step=5, use_augment=False, data_name='human'):
         super(HumanDataset,self).__init__()
         self.data_root = data_root
         self.file_list = None
@@ -39,6 +39,7 @@ class HumanDataset(Dataset):
             self.file_list = f.readlines()
         self.mean = None
         self.std = None
+        self.data_name = data_name
 
     def _augment_seq(self, imgs, h, w):
         """Augmentations for video"""
@@ -134,14 +135,7 @@ def load_data(batch_size, val_batch_size, data_root, num_workers=4,
 
 
 if __name__ == '__main__':
-    from openstl.utils import init_dist
-    os.environ['LOCAL_RANK'] = str(0)
-    os.environ['RANK'] = str(0)
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12357'
-    dist_params = dict(launcher='pytorch', backend='nccl', init_method='env://', world_size=1)
-    init_dist(**dist_params)
-
+    
     dataloader_train, _, dataloader_test = \
         load_data(batch_size=16,
                   val_batch_size=4,

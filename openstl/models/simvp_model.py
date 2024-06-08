@@ -7,7 +7,6 @@ from ..modules import (ConvSC, ConvNeXtSubBlock, ConvMixerSubBlock, GASubBlock, 
 
 from ..modules.layers import MixMlp
 from ..modules.simvp_modules import SpatialAttention
-from openstl.modules import Routing, MVFB, RoundSTE, warp
 
 class SimVP_Model(nn.Module):
     r"""SimVP Model
@@ -263,15 +262,11 @@ class MidMetaNet(nn.Module):
 
     def __init__(self, channel_in, channel_hid, N2,
                  input_resolution=None, model_type=None,
-                 mlp_ratio=4., drop=0.0, drop_path=0.1, weight_sharing=False, dynamic_routing=False, routing_beta=None,
-                 input_channels=None, routing_out_channels=None, weight_sharing_gru=False):
+                 mlp_ratio=4., drop=0.0, drop_path=0.1, weight_sharing=False):
         super(MidMetaNet, self).__init__()
         assert N2 >= 2 and mlp_ratio > 1
         self.N2 = N2
-        self.routing_beta = routing_beta
         self.weight_sharing = weight_sharing
-        self.weight_sharing_gru = weight_sharing_gru
-        self.dynamic_routing = dynamic_routing
         self.channel_hid = channel_hid
         dpr = [  # stochastic depth decay rule
             x.item() for x in torch.linspace(1e-2, drop_path, self.N2)]
@@ -284,16 +279,8 @@ class MidMetaNet(nn.Module):
                 norm2=nn.BatchNorm2d(channel_hid),
                 mlp=MixMlp(in_features=channel_hid, hidden_features=mlp_hidden_dim, act_layer=nn.GELU, drop=drop)
             )
-            if weight_sharing_gru:
-                self.gru = nn.GRUCell(channel_hid, channel_hid)
-                self.gru_predictor = nn.Linear(channel_hid, 1)
         else:
             weight_sharing_params = None
-
-        if self.dynamic_routing:
-            self.routing = Routing(2*input_channels, routing_out_channels)
-            self.input_channels = input_channels
-            self.l1 = nn.Linear(routing_out_channels, N2)
 
         # downsample
         enc_layers = [MetaBlock(
@@ -314,10 +301,6 @@ class MidMetaNet(nn.Module):
     def forward(self, x):
         B, T, C, H, W = x.shape
         x = x.reshape(B, T * C, H, W)
-        if self.dynamic_routing:
-            # routing vector shape [batchsize, num_blocks]
-            ref = self.get_routing_vector(x)
-            ref = ref.long()
 
         z = x
         if self.weight_sharing_gru:
@@ -327,19 +310,8 @@ class MidMetaNet(nn.Module):
             pass
         else:
             for i in range(self.N2):
-                if self.dynamic_routing:
-                    z = self.enc[i](z, ref[:, i])
-                else:
-                    z = self.enc[i](z)
+                z = self.enc[i](z)
 
         y = z.reshape(B, T, C, H, W)
         return y
 
-    def get_routing_vector(self, x):
-        routing_vector = self.routing(x[:, :2*self.input_channels]).reshape(x.shape[0], -1)
-        routing_vector = torch.sigmoid(self.l1(routing_vector))
-        routing_vector = self.routing_beta * self.N2 * \
-                         routing_vector / (routing_vector.sum(1, True) + 1e-6)
-        routing_vector = torch.clamp(routing_vector, 0, 1)
-        ref = RoundSTE.apply(routing_vector)
-        return ref

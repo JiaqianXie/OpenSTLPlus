@@ -1,5 +1,4 @@
 method = 'SimVP'
-project='openstl'
 # model
 spatio_kernel_enc = 3
 spatio_kernel_dec = 3
@@ -13,7 +12,3 @@ lr = 1e-3
 drop_path = 0.1
 batch_size = 8  # bs = 2 x 8GPUs
 sched = 'onecycle'
-
-# ema_hook = dict(momentum=1e-4, priority='ABOVE_NORMAL')
-save_best_hook = dict(priority='ABOVE_NORMAL')
-wandb_hook = dict(priority='ABOVE_NORMAL')

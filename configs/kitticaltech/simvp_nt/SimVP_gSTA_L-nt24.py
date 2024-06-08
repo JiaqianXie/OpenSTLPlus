@@ -4,21 +4,20 @@ project='video-prediction'
 spatio_kernel_enc = 3
 spatio_kernel_dec = 3
 model_type = 'gSTA'
-hid_S = 128
-hid_T = 1024
-N_T = 24
-N_S = 2
+# hid_S = 128
+# hid_T = 1024
+# N_T = 24
+# N_S = 4
 
-#hid_S = 128
-#hid_T = 512
-#N_T = 12
-#N_S = 4
+hid_S = 128
+hid_T = 512
+N_T = 12
+N_S = 4
 
 # training
-lr = 5e-4
-batch_size = 2
-val_batch_size = 2
-drop_path = 0.2
+lr = 5e-3
+batch_size = 8
+drop_path = 0
 # sched = 'cosine'
 # warmup_lr = 1e-5
 # warmup_epoch = 20

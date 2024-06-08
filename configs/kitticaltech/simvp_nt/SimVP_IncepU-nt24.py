@@ -7,12 +7,11 @@ model_type = 'IncepU'  # SimVP.V1
 hid_S = 128
 hid_T = 1024
 N_T = 24
-N_S = 2
+N_S = 4
 # training
-lr = 5e-4
+lr = 1e-3
 drop_path = 0.1
-batch_size = 4
-val_batch_size = 4
+batch_size = 1
 sched = 'onecycle'
 epoch = 200
 save_best_hook = dict()

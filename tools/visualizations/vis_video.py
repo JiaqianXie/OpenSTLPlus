@@ -30,6 +30,7 @@ def parse_args():
                         help='The path to save visualization results')
     parser.add_argument('--vis_channel', '-vc', default=-1, type=int,
                         help='Select a channel to visualize as the heatmap')
+
     args = parser.parse_args()
     return args
 
@@ -47,7 +48,7 @@ def main():
     else:
         method_list = [args.work_dirs.split('/')[-1]]
         base_dir = base_dir.split(method_list[0])[0]
-    print(method_list)
+
     use_rgb = False if args.dataname in ['mfmnist', 'mmnist', 'kth20', 'kth', 'kth40'] else True
     config = args.__dict__
     config.update(dataset_parameters[args.dataname])
@@ -117,9 +118,6 @@ def main():
             show_video_line(trues.copy(), ncols=config['aft_seq_length'], vmax=0.6, cbar=False,
                 out_path='{}/{}_true{}'.format(args.save_dirs, args.dataname+c_surfix, str(idx)+'.png'),
                 format='png', use_rgb=use_rgb)
-            show_video_line(trues.copy(), ncols=config['aft_seq_length'], vmax=0.6, cbar=False,
-                            out_path='{}/{}_true{}'.format(args.save_dirs, args.dataname + c_surfix, str(idx) + '.png'),
-                            format='png', use_rgb=use_rgb)
             show_video_gif_single(inputs.copy(), use_rgb=use_rgb,
                 out_path='{}/{}_{}_{}_input'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
             show_video_gif_single(trues.copy(), use_rgb=use_rgb,
@@ -128,14 +126,10 @@ def main():
         show_video_line(preds, ncols=ncols, vmax=0.6, cbar=False,
                         out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, str(idx)+'.png'),
                         format='png', use_rgb=use_rgb)
-        input_preds = np.concatenate((inputs, preds), axis=0)
-        show_video_line(input_preds, ncols=config['total_length'], vmax=0.6, cbar=False, pred_length=config['aft_seq_length'],
-                        out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, f'{str(idx)}_all.png'),
-                        format='png', use_rgb=use_rgb)
-        # show_video_gif_multiple(inputs, trues, preds, use_rgb=use_rgb,
-        #                         out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
-        # show_video_gif_single(preds, use_rgb=use_rgb,
-        #                       out_path='{}/{}_{}_{}_pred'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        show_video_gif_multiple(inputs, trues, preds, use_rgb=use_rgb,
+                                out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        show_video_gif_single(preds, use_rgb=use_rgb,
+                              out_path='{}/{}_{}_{}_pred'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
 
 
 if __name__ == '__main__':

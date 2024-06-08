@@ -6,7 +6,6 @@ import imageio
 import numpy as np
 
 import matplotlib.pyplot as plt
-from PIL import Image
 
 
 def imshow(img: Union[str, np.ndarray],
@@ -65,8 +64,7 @@ def get_mpl_colormap(cmap_name):
     return color_range.reshape(256, 1, 3)
 
 
-def show_video_line(data, ncols, vmax=0.6, vmin=0.0, cmap='gray', norm=None, cbar=False, format='png', out_path=None,
-                    pred_length=None, use_rgb=False):
+def show_video_line(data, ncols, vmax=0.6, vmin=0.0, cmap='gray', norm=None, cbar=False, format='png', out_path=None, use_rgb=False):
     """generate images with a video sequence"""
     fig, axes = plt.subplots(nrows=1, ncols=ncols, figsize=(3.25 * ncols, 3))
     plt.subplots_adjust(wspace=0.01, hspace=0)
@@ -84,9 +82,6 @@ def show_video_line(data, ncols, vmax=0.6, vmin=0.0, cmap='gray', norm=None, cba
         axes.axis('off')
         im.set_clim(vmin, vmax)
     else:
-        if pred_length is not None:
-            input_length = ncols - pred_length
-            texts = ["input"] * input_length + ["pred"] * pred_length
         for t, ax in enumerate(axes.flat):
             if use_rgb:
                 im = ax.imshow(cv2.cvtColor(data[t], cv2.COLOR_BGR2RGB), cmap='gray')
@@ -95,8 +90,6 @@ def show_video_line(data, ncols, vmax=0.6, vmin=0.0, cmap='gray', norm=None, cba
             images.append(im)
             ax.axis('off')
             im.set_clim(vmin, vmax)
-            if pred_length is not None:
-                ax.text(0.5, 1.10, texts[t], color='black', fontsize=12, ha='center', va='top', transform=ax.transAxes)
 
     if cbar and ncols > 1:
         cbaxes = fig.add_axes([0.9, 0.15, 0.04 / ncols, 0.7]) 
@@ -150,17 +143,15 @@ def show_video_gif_multiple(prev, true, pred, vmax=0.6, vmin=0.0, cmap='gray', n
             ax.axis('off')
             im.set_clim(vmin, vmax)
         plt.savefig('./tmp.png', bbox_inches='tight', format='png')
-        images.append(Image.fromarray(np.asarray(Image.open('./tmp.png'))))
+        images.append(imageio.imread('./tmp.png'))
     plt.close()
     os.remove('./tmp.png')
-
-    fps = 10
 
     if out_path is not None:
         if not out_path.endswith('gif'):
             out_path = out_path + '.gif'
-        images[0].save(out_path, save_all=True, append_images=images[1:], optimize=False, duration=int(1/fps*len(images)), loop=0)
-    return images
+        imageio.mimsave(out_path, images)
+
 
 def show_video_gif_single(data, out_path=None, use_rgb=False):
     """generate gif with a video sequence"""
@@ -173,10 +164,6 @@ def show_video_gif_single(data, out_path=None, use_rgb=False):
         if use_rgb:
             data[i] = cv2.cvtColor(data[i], cv2.COLOR_BGR2RGB)
         image = imageio.core.util.Array(data[i])
-        # if the channel is 1, need to reduce this channel dimension
-        if image.shape[2] == 1:
-            image = np.squeeze(image, axis=2)
-        image = (image * 255).astype(np.uint8)
         images.append(image)
 
     if out_path is not None:

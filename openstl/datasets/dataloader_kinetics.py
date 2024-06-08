@@ -36,7 +36,7 @@ class KineticsDataset(Dataset):
 
     def __init__(self, data_root, list_path, image_size=256,
                  pre_seq_length=4, aft_seq_length=4, frame_sample_rate=2,
-                 keep_aspect_ratio=False, num_segment=1, use_augment=False):
+                 keep_aspect_ratio=False, num_segment=1, use_augment=False, data_name='kinetics'):
         super(KineticsDataset,self).__init__()
         self.data_root = data_root
         self.image_size = image_size
@@ -44,6 +44,7 @@ class KineticsDataset(Dataset):
         self.aft_seq_length = aft_seq_length
         self.seq_length = pre_seq_length + aft_seq_length
         self.use_augment = use_augment
+        self.data_name = data_name
         self.input_shape = (self.seq_length, self.image_size, self.image_size, 3)
 
         self.frame_sample_rate = frame_sample_rate
@@ -194,13 +195,6 @@ def load_data(batch_size, val_batch_size, data_root, num_workers=4, data_name='k
 
 
 if __name__ == '__main__':
-    from openstl.utils import init_dist
-    os.environ['LOCAL_RANK'] = str(0)
-    os.environ['RANK'] = str(0)
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12357'
-    dist_params = dict(launcher='pytorch', backend='nccl', init_method='env://', world_size=1)
-    init_dist(**dist_params)
 
     dataloader_train, _, dataloader_test = \
         load_data(batch_size=16,

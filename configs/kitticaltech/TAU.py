@@ -1,5 +1,4 @@
 method = 'TAU'
-project='video-prediction'
 # model
 spatio_kernel_enc = 3
 spatio_kernel_dec = 3
@@ -12,8 +11,6 @@ alpha = 0.1
 # training
 lr = 1e-2
 drop_path = 0.1
-batch_size = 8
-val_batch_size = 8
+batch_size = 2
 sched = 'onecycle'
-save_best_hook = dict()
-wandb_hook = dict()
+epoch = 200

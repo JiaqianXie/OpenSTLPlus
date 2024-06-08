@@ -21,7 +21,7 @@ class KittiCaltechDataset(Dataset):
     """KittiCaltech <https://dl.acm.org/doi/10.1177/0278364913491297>`_ Dataset"""
 
     def __init__(self, datas, indices, pre_seq_length, aft_seq_length,
-                 require_back=False, use_augment=False):
+                 require_back=False, use_augment=False, data_name='kitticaltech'):
         super(KittiCaltechDataset, self).__init__()
         self.datas = datas.swapaxes(2, 3).swapaxes(1, 2)
         self.indices = indices
@@ -31,6 +31,7 @@ class KittiCaltechDataset(Dataset):
         self.use_augment = use_augment
         self.mean = 0
         self.std = 1
+        self.data_name = data_name
 
     def _augment_seq(self, imgs, crop_scale=0.95):
         """Augmentations for video"""
@@ -172,12 +173,6 @@ def load_data(batch_size, val_batch_size, data_root, num_workers=4,
         test_idx = np.load(osp.join(data_root, 'kitticaltech_npy', 'test_idx.npy'))
     else:
         assert False and "Invalid data_root for kitticaltech dataset"
-
-    seq_length = input_param['seq_length']
-    last_train_idx = train_data.shape[0] - seq_length - 1
-    last_test_idx = test_data.shape[0] - seq_length - 1
-    train_idx = [data_idx for data_idx in train_idx if data_idx <= last_train_idx]
-    test_idx = [data_idx for data_idx in test_idx if data_idx <= last_test_idx]
 
     train_set = KittiCaltechDataset(
         train_data, train_idx, pre_seq_length, aft_seq_length, use_augment=use_augment)
