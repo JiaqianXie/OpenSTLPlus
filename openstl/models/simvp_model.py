@@ -18,11 +18,10 @@ class SimVP_Model(nn.Module):
 
     def __init__(self, in_shape, hid_S=16, hid_T=256, N_S=4, N_T=4, model_type='gSTA',
                  mlp_ratio=8., drop=0.0, drop_path=0.0, spatio_kernel_enc=3,
-                 spatio_kernel_dec=3, act_inplace=True, routing_out_channels=None, routing_beta=None, **kwargs):
+                 spatio_kernel_dec=3, act_inplace=False, **kwargs):
         super(SimVP_Model, self).__init__()
         T, C, H, W = in_shape  # T is pre_seq_length
         H, W = int(H / 2**(N_S/2)), int(W / 2**(N_S/2))  # downsample 1 / 2**(N_S/2)
-        act_inplace = False
         self.enc = Encoder(C, hid_S, N_S, spatio_kernel_enc, act_inplace=act_inplace)
         self.dec = Decoder(hid_S, C, N_S, spatio_kernel_dec, act_inplace=act_inplace)
 
@@ -35,15 +34,6 @@ class SimVP_Model(nn.Module):
             self.hid = MidMetaNet(T * hid_S, hid_T, N_T,
               input_resolution=(H, W), model_type=model_type,
               mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path, weight_sharing=True)
-        elif model_type == 'gsta-weight-sharing-gru':
-            self.hid = MidMetaNet(T * hid_S, hid_T, N_T,
-              input_resolution=(H, W), model_type=model_type,
-              mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path, weight_sharing=True, weight_sharing_gru=True)
-        elif model_type == 'tau-dynamic-routing':
-            self.hid = MidMetaNet(T * hid_S, hid_T, N_T,
-              input_resolution=(H, W), model_type=model_type,
-              mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path, dynamic_routing=True, input_channels=C,
-                                  routing_out_channels=routing_out_channels, routing_beta=routing_beta)
         else:
             self.hid = MidMetaNet(T*hid_S, hid_T, N_T,
                 input_resolution=(H, W), model_type=model_type,
@@ -303,14 +293,8 @@ class MidMetaNet(nn.Module):
         x = x.reshape(B, T * C, H, W)
 
         z = x
-        if self.weight_sharing_gru:
-            z = self.enc[0](z)
-            gru_ht = torch.zeros(B, self.channel_hid)
-
-            pass
-        else:
-            for i in range(self.N2):
-                z = self.enc[i](z)
+        for i in range(self.N2):
+            z = self.enc[i](z)
 
         y = z.reshape(B, T, C, H, W)
         return y

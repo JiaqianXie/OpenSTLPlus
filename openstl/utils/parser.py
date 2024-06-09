@@ -7,36 +7,43 @@ def create_parser():
     parser = argparse.ArgumentParser(
         description='OpenSTL train/test a model')
     # Set-up parameters
+    parser.add_argument('dataname', type=str,
+                        choices=['bair', 'mfmnist', 'mmnist', 'mmnist_cifar', 'noisymmnist', 'taxibj', 'human',
+                                 'kth', 'kth20', 'kth40', 'kitticaltech', 'kinetics', 'kinetics400', 'kinetics600',
+                                 'weather', 'weather_t2m_5_625', 'weather_mv_4_28_s6_5_625', 'weather_mv_4_4_s6_5_625',
+                                 'weather_r_5_625', 'weather_uv10_5_625', 'weather_tcc_5_625', 'weather_t2m_1_40625',
+                                 'weather_r_1_40625', 'weather_uv10_1_40625', 'weather_tcc_1_40625',
+                                 'sevir_vis', 'sevir_ir069', 'sevir_ir107', 'sevir_vil'],
+                        help='Dataset name (default: "mmnist")')
+    parser.add_argument('config_file', type=str, help='Path to the config file')
+
+
     parser.add_argument('--device', default='cuda', type=str,
                         help='Name of device to use for tensor computations (cuda/cpu)')
     parser.add_argument('--dist', action='store_true', default=False,
                         help='Whether to use distributed training (DDP)')
     parser.add_argument('--res_dir', default='work_dirs', type=str)
     parser.add_argument('--ex_name', '-ex', default='Debug', type=str)
-    parser.add_argument('--fp16', action='store_true', default=False,
+    parser.add_argument('--fp16', action='store_false', default=True,
                         help='Whether to use Native AMP for mixed precision training (PyTorch=>1.6.0)')
     parser.add_argument('--torchscript', action='store_true', default=False,
                         help='Whether to use torchscripted model')
     parser.add_argument('--seed', default=42, type=int)
-    parser.add_argument('--fps', action='store_true', default=False,
+    parser.add_argument('--fps', action='store_false', default=True,
                         help='Whether to measure inference speed (FPS)')
     parser.add_argument('--test', action='store_true', default=False, help='Only performs testing')
     parser.add_argument('--deterministic', action='store_true', default=False,
                         help='whether to set deterministic options for CUDNN backend (reproducable)')
+    parser.add_argument('--resume_from', type=str, default=None, help='the checkpoint file to resume from')
+    parser.add_argument('--auto_resume', action='store_true', default=False,
+                        help='When training was interupted, resume from the latest checkpoint')
 
     # dataset parameters
     parser.add_argument('--batch_size', '-b', default=16, type=int, help='Training batch size')
     parser.add_argument('--val_batch_size', '-vb', default=16, type=int, help='Validation batch size')
-    parser.add_argument('--num_workers', default=4, type=int)
+    parser.add_argument('--num_workers', default=8, type=int)
     parser.add_argument('--data_root', default='./data')
-    parser.add_argument('--dataname', '-d', default='mmnist', type=str,
-                        choices=['bair', 'mfmnist', 'mmnist', 'mmnist_cifar', 'noisymmnist', 'taxibj', 'human',
-                                'kth', 'kth20', 'kth40', 'kitticaltech', 'kinetics', 'kinetics400', 'kinetics600',
-                                'weather', 'weather_t2m_5_625', 'weather_mv_4_28_s6_5_625', 'weather_mv_4_4_s6_5_625',
-                                'weather_r_5_625', 'weather_uv10_5_625', 'weather_tcc_5_625', 'weather_t2m_1_40625',
-                                'weather_r_1_40625', 'weather_uv10_1_40625', 'weather_tcc_1_40625',
-                                'sevir_vis', 'sevir_ir069', 'sevir_ir107', 'sevir_vil'],
-                        help='Dataset name (default: "mmnist")')
+
     parser.add_argument('--pre_seq_length', default=None, type=int, help='Sequence length before prediction')
     parser.add_argument('--aft_seq_length', default=None, type=int, help='Sequence length after prediction')
     parser.add_argument('--total_length', default=None, type=int, help='Total Sequence length for prediction')
@@ -54,13 +61,11 @@ def create_parser():
                                 'PredRNNv2', 'predrnnv2', 'SimVP', 'simvp', 'TAU', 'tau', 'MMVP', 'mmvp', 
                                 'SwinLSTM', 'swinlstm', 'swinlstm_d', 'swinlstm_b'],
                         help='Name of video prediction method to train (default: "SimVP")')
-    parser.add_argument('--config_file', '-c', default=None, type=str,
-                        help='Path to the default config file')
     parser.add_argument('--model_type', default=None, type=str,
                         help='Name of model for SimVP (default: None)')
     parser.add_argument('--drop', type=float, default=0.0, help='Dropout rate(default: 0.)')
     parser.add_argument('--drop_path', type=float, default=0.0, help='Drop path rate for SimVP (default: 0.)')
-    parser.add_argument('--overwrite', action='store_true', default=False,
+    parser.add_argument('--overwrite', action='store_false', default=True,
                         help='Whether to allow overwriting the provided config file with args')
 
     # Training parameters (optimizer)

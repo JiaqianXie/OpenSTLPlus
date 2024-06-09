@@ -8,7 +8,6 @@ from openstl.api import BaseExperiment
 from openstl.utils import (create_parser, default_parser, get_dist_info, load_config,
                            update_config)
 
-
 if __name__ == '__main__':
     args = create_parser().parse_args()
     config = args.__dict__

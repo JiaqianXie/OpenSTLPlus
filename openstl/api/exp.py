@@ -34,26 +34,50 @@ class BaseExperiment(object):
             else args.ex_name.split(args.res_dir+'/')[-1])
         ckpt_dir = osp.join(save_dir, 'checkpoints')
 
+        checkpoint_path = None
+        if args.auto_resume and args.resume_from is None:
+            if osp.exists(osp.join(ckpt_dir, 'last.ckpt')):
+                checkpoint_path = osp.join(ckpt_dir, 'last.ckpt')
+                print('Resuming from {}'.format(checkpoint_path))
+            else:
+                print("Last checkpoint not found! Cannot resume the training.")
+                sys.exit()
+        if args.resume_from is not None:
+            if osp.exists(osp.join(base_dir, args.resume_from)):
+                checkpoint_path = osp.join(base_dir, args.resume_from)
+                print('Resuming from {}'.format(checkpoint_path))
+            else:
+                print(f"The checkpoint not found at {args.resume_from}! Cannot resume the training.")
+                sys.exit()
+
         seed_everything(args.seed)
         self.data = self._get_data(dataloaders)
         self.method = method_maps[self.args.method](steps_per_epoch=len(self.data.train_loader),
             test_mean=self.data.test_mean, test_std=self.data.test_std, save_dir=save_dir, **self.config)
         callbacks, self.save_dir = self._load_callbacks(args, save_dir, ckpt_dir)
         wandb_logger = WandbLogger(name=args.ex_name, project=args.project_name)
-        self.trainer = self._init_trainer(self.args, callbacks, strategy, wandb_logger)
+        self.trainer = self._init_trainer(self.args, callbacks, strategy, wandb_logger, checkpoint_path)
 
-    def _init_trainer(self, args, callbacks, strategy, wandb_logger):
-        return Trainer(devices=args.gpus,  # Use these GPUs
-                       max_epochs=args.epoch,  # Maximum number of epochs to train for
-                       strategy=strategy,   # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
-                       accelerator='gpu',  # Use distributed data parallel
-                       callbacks=callbacks,
-                       benchmark=True,
-                       # val_check_interval=100,
-                       precision='bf16',
-                       amp_backend='native',
-                       enable_progress_bar=False,
-                       logger=wandb_logger
+    def _init_trainer(self, args, callbacks, strategy, wandb_logger, checkpoint_path=None):
+        if checkpoint_path is None:
+            return Trainer(devices=args.gpus,  # Use these GPUs
+                    max_epochs=args.epoch,  # Maximum number of epochs to train for
+                    strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
+                    accelerator='gpu',  # Use distributed data parallel
+                    callbacks=callbacks,
+                    benchmark=True,
+                    enable_progress_bar=False,
+                    logger=wandb_logger
+                    )
+        else:
+            return Trainer(devices=args.gpus,  # Use these GPUs
+                    strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
+                    accelerator='gpu',  # Use distributed data parallel
+                    callbacks=callbacks,
+                    benchmark=True,
+                    enable_progress_bar=False,
+                    logger=wandb_logger,
+                    resume_from_checkpoint=checkpoint_path
                     )
 
     def _load_callbacks(self, args, save_dir, ckpt_dir):
