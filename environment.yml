@@ -22,4 +22,4 @@ dependencies:
     - dill
     - einops
     - wandb
-prefix: /home/aslab/miniconda3/envs/openstl
+#prefix: /home/aslab/miniconda3/envs/openstl
