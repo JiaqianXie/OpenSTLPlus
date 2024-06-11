@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
     assert args.config_file is not None, "Config file is required for testing"
     config = update_config(config, load_config(args.config_file),
-                           exclude_keys=['method', 'val_batch_size'])
+                           include_keys=[])
     default_values = default_parser()
     for attribute in default_values.keys():
         if config[attribute] is None:
