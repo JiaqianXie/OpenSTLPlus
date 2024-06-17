@@ -59,26 +59,48 @@ class BaseExperiment(object):
         self.trainer = self._init_trainer(self.args, callbacks, strategy, wandb_logger, checkpoint_path)
 
     def _init_trainer(self, args, callbacks, strategy, wandb_logger, checkpoint_path=None):
-        if checkpoint_path is None:
-            return Trainer(devices=args.gpus,  # Use these GPUs
+        # Trainer(devices=args.gpus,  # Use these GPUs
+        #             strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
+        #             accelerator='gpu',  # Use distributed data parallel
+        #             callbacks=callbacks,
+        #             benchmark=True,
+        #             enable_progress_bar=False,
+        #             logger=wandb_logger,
+        #             resume_from_checkpoint=checkpoint_path
+
+        return Trainer(
                     max_epochs=args.epoch,  # Maximum number of epochs to train for
                     strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
                     accelerator='gpu',  # Use distributed data parallel
                     callbacks=callbacks,
                     benchmark=True,
                     enable_progress_bar=False,
-                    logger=wandb_logger
-                    )
-        else:
-            return Trainer(devices=args.gpus,  # Use these GPUs
-                    strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
-                    accelerator='gpu',  # Use distributed data parallel
-                    callbacks=callbacks,
-                    benchmark=True,
-                    enable_progress_bar=False,
                     logger=wandb_logger,
-                    resume_from_checkpoint=checkpoint_path
+                    num_nodes=args.nnodes
                     )
+
+        # if args.dist:
+        #     return Trainer(
+        #             max_epochs=args.epoch,  # Maximum number of epochs to train for
+        #             strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
+        #             accelerator='gpu',  # Use distributed data parallel
+        #             callbacks=callbacks,
+        #             benchmark=True,
+        #             enable_progress_bar=False,
+        #             logger=wandb_logger,
+        #             num_nodes=args.nnodes,
+        #             gpus=1
+        #             )
+        # else:
+        #     return Trainer(devices=args.gpus,  # Use these GPUs
+        #             max_epochs=args.epoch,  # Maximum number of epochs to train for
+        #             strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
+        #             accelerator='gpu',  # Use distributed data parallel
+        #             callbacks=callbacks,
+        #             benchmark=True,
+        #             enable_progress_bar=False,
+        #             logger=wandb_logger
+        #             )
 
     def _load_callbacks(self, args, save_dir, ckpt_dir):
         method_info = None

@@ -1,6 +1,8 @@
 #!/bin/bash
-conda create -n openstlplus -y python=3.9
-conda activate openstlplus
-conda install -y pytorch torchvision pytorch-cuda=11.8 -c pytorch -c nvidia
-pip3 install hickle decord fvcore lpips nni pandas tqdm wandb --quiet
-pip3 install -e .
+# conda create -n OpenSTL -y python=3.10
+# conda activate OpenSTL
+conda install -y pytorch torchvision pytorch-cuda=12.1 -c pytorch -c nvidia
+conda install -y lightning -c conda-forge
+conda install -y -c conda-forge xarray dask netCDF4 bottleneck
+python -m pip install timm scikit-image hickle decord fvcore lpips nni einops pandas tqdm wandb dill  --quiet
+python -m pip install -e .
