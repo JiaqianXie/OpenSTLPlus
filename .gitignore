@@ -142,3 +142,4 @@ configs/bair/simvp
 # wandb
 wandb/
 data/
+lightning_logs/
