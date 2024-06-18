@@ -48,6 +48,7 @@ class BatchEndCallback(Callback):
     def __init__(self, log_interval=50):
         self.log_interval = log_interval
         self.epoch_start_time = None
+        print_log("init batchend callback")
 
     def on_train_epoch_start(self, trainer, pl_module):
         self.epoch_start_time = datetime.now()
@@ -64,7 +65,7 @@ class BatchEndCallback(Callback):
 
             # Format estimated time left
             estimated_time_left_str = str(timedelta(seconds=int(estimated_time_left.total_seconds())))
-            print(f"Epoch: [{current_epoch}] [{batch_idx}/{num_training_batches}] eta:{estimated_time_left_str} "
+            print_log(f"Epoch: [{current_epoch}] [{batch_idx}/{num_training_batches}] eta:{estimated_time_left_str} "
                   f"loss: {round(outputs['loss'].cpu().item(), 4)}")
 
 

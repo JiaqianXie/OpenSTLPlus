@@ -8,6 +8,6 @@ window_size = 4
 embed_dim = 128
 # training
 lr = 1e-4
-batch_size = 8
-val_batch_size = 8
+batch_size = 6
+val_batch_size = 6
 sched = 'onecycle'

@@ -70,6 +70,7 @@ class BaseExperiment(object):
         #             resume_from_checkpoint=checkpoint_path
 
         return Trainer(
+                    devices=args.gpus,  # Use these GPUs
                     max_epochs=args.epoch,  # Maximum number of epochs to train for
                     strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
                     accelerator='gpu',  # Use distributed data parallel
