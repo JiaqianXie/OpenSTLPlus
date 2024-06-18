@@ -21,7 +21,8 @@ import wandb
 class BaseExperiment(object):
     """The basic class of PyTorch training and evaluation."""
 
-    def __init__(self, args, dataloaders=None, strategy='ddp'):
+    # def __init__(self, args, dataloaders=None, strategy='ddp'):
+    def __init__(self, args, dataloaders=None, strategy='ddp_find_unused_parameters_true'):
         """Initialize experiments (non-dist as an example)"""
         self.args = args
         self.config = self.args.__dict__

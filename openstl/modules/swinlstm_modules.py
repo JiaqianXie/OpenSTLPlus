@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from timm.models.swin_transformer import SwinTransformerBlock,  window_reverse, PatchEmbed, PatchMerging, window_partition
+from timm.models.swin_transformer import SwinTransformerBlock, window_reverse, PatchEmbed, PatchMerging, window_partition
 from timm.models.layers import to_2tuple
 
 class SwinLSTMCell(nn.Module):
@@ -70,8 +70,8 @@ class STB(SwinTransformerBlock):
         super(STB, self).__init__(dim=dim, input_resolution=input_resolution, 
                                   num_heads=num_heads, window_size=window_size,
                                   shift_size=0 if (index % 2 == 0) else window_size // 2,
-                                  mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,                                   
-                                  drop=drop, attn_drop=attn_drop,
+                                  mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
+                                  proj_drop=drop, attn_drop=attn_drop,
                                   drop_path=drop_path,
                                   norm_layer=norm_layer)
         self.red = nn.Linear(2 * dim, dim)
@@ -90,32 +90,51 @@ class STB(SwinTransformerBlock):
         x = x.view(B, H, W, C)
 
         # cyclic shift
-        if self.shift_size > 0:
-            shifted_x = torch.roll(x, shifts=(-self.shift_size, -self.shift_size), dims=(1, 2))
+        has_shift = any(self.shift_size)
+        # if self.shift_size > 0: # old
+        if has_shift: # new
+            shifted_x = torch.roll(x, shifts=(-self.shift_size[0], -self.shift_size[1]), dims=(1, 2))
         else:
             shifted_x = x
 
+        # pad for resolution not divisible by window size
+        pad_h = (self.window_size[0] - H % self.window_size[0]) % self.window_size[0]
+        pad_w = (self.window_size[1] - W % self.window_size[1]) % self.window_size[1]
+        shifted_x = torch.nn.functional.pad(shifted_x, (0, 0, 0, pad_w, 0, pad_h))
+        Hp, Wp = H + pad_h, W + pad_w
+
         # partition windows
         x_windows = window_partition(shifted_x, self.window_size)  # num_win*B, window_size, window_size, C
-        x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # num_win*B, window_size*window_size, C
+        x_windows = x_windows.view(-1, self.window_size[0] * self.window_size[1], C)  # num_win*B, window_size*window_size, C
 
         # W-MSA/SW-MSA
         attn_windows = self.attn(x_windows, mask=self.attn_mask)  # num_win*B, window_size*window_size, C
 
-        # merge windows
-        attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
-        shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
+        # merge windows old
+        # attn_windows = attn_windows.view(-1, self.window_size[0], self.window_size[1], C)
+        # shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
 
-        # reverse cyclic shift
-        if self.shift_size > 0:
-            x = torch.roll(shifted_x, shifts=(self.shift_size, self.shift_size), dims=(1, 2))
+        # merge windows
+        attn_windows = attn_windows.view(-1, self.window_size[0], self.window_size[1], C)
+        shifted_x = window_reverse(attn_windows, self.window_size, Hp, Wp)  # B H' W' C
+        shifted_x = shifted_x[:, :H, :W, :].contiguous()
+
+        # reverse cyclic shift old
+        # if self.shift_size > 0: # new
+        #     x = torch.roll(shifted_x, shifts=(self.shift_size[0], self.shift_size[1]), dims=(1, 2))
+        # else:
+        #     x = shifted_x
+
+        if has_shift:
+            x = torch.roll(shifted_x, shifts=self.shift_size, dims=(1, 2))
         else:
             x = shifted_x
+
         x = x.view(B, H * W, C)
 
         # FFN
-        x = shortcut + self.drop_path(x)
-        x = x + self.drop_path(self.mlp(self.norm2(x)))
+        x = shortcut + self.drop_path1(x)
+        x = x + self.drop_path2(self.mlp(self.norm2(x)))
 
         return x
         
@@ -243,7 +262,7 @@ class DownSample(nn.Module):
         self.embed_dim = embed_dim
         self.mlp_ratio = mlp_ratio
         self.patch_embed = PatchEmbed(img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim, norm_layer=nn.LayerNorm)
-        patches_resolution = self.patch_embed.grid_size
+        self.patches_resolution = self.patch_embed.grid_size
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths_downsample))]
 
@@ -251,13 +270,16 @@ class DownSample(nn.Module):
         self.downsample = nn.ModuleList()
 
         for i_layer in range(self.num_layers):
-            downsample = PatchMerging(input_resolution=(patches_resolution[0] // (2 ** i_layer),
-                                                        patches_resolution[1] // (2 ** i_layer)),
-                                      dim=int(embed_dim * 2 ** i_layer))
+            # old
+            # downsample = PatchMerging(input_resolution=(patches_resolution[0] // (2 ** i_layer),
+            #                                             patches_resolution[1] // (2 ** i_layer)),
+            #                           dim=int(embed_dim * 2 ** i_layer))
+            # new
+            downsample = PatchMerging(dim=int(embed_dim * 2 ** i_layer))
 
             layer = SwinLSTMCell(dim=int(embed_dim * 2 ** i_layer),
-                                 input_resolution=(patches_resolution[0] // (2 ** i_layer),
-                                                   patches_resolution[1] // (2 ** i_layer)),
+                                 input_resolution=(self.patches_resolution[0] // (2 ** i_layer),
+                                                   self.patches_resolution[1] // (2 ** i_layer)),
                                  depth=depths_downsample[i_layer],
                                  num_heads=num_heads[i_layer],
                                  window_size=window_size,
@@ -271,14 +293,16 @@ class DownSample(nn.Module):
             self.downsample.append(downsample)
 
     def forward(self, x, y):
-
         x = self.patch_embed(x)
-
         hidden_states_down = []
-
+        H, W = self.patches_resolution
         for index, layer in enumerate(self.layers):
             x, hidden_state = layer(x, y[index])
+            B, HW, C = x.shape
+            x = x.view(B, H, W, C)
             x = self.downsample[index](x)
+            B, H, W, C = x.shape
+            x = x.view(B, W*H, C)
             hidden_states_down.append(hidden_state)
 
         return hidden_states_down, x
