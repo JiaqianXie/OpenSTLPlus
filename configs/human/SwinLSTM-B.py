@@ -1,4 +1,5 @@
 method = 'SwinLSTM_B'
+project_name = 'video-prediction'
 # model
 depths = 12
 num_heads = 4
