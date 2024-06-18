@@ -141,3 +141,4 @@ configs/bair/simvp
 
 # wandb
 wandb/
+data/
