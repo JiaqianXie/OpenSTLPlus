@@ -9,20 +9,17 @@ import torch
 
 from openstl.methods import method_maps
 from openstl.datasets import BaseDataModule
-from openstl.utils import (get_dataset, measure_throughput, SetupCallback, EpochEndCallback,
-                           BestCheckpointCallback, BatchEndCallback)
+from openstl.utils import (get_dataset, measure_throughput, SetupCallback, EpochEndCallback, BestCheckpointCallback)
 
 import argparse
 from pytorch_lightning import seed_everything, Trainer
 import pytorch_lightning.callbacks as plc
-from pytorch_lightning.loggers import WandbLogger
-import wandb
+
 
 class BaseExperiment(object):
     """The basic class of PyTorch training and evaluation."""
 
-    # def __init__(self, args, dataloaders=None, strategy='ddp'):
-    def __init__(self, args, dataloaders=None, strategy='ddp_find_unused_parameters_true'):
+    def __init__(self, args, dataloaders=None, strategy='ddp'):
         """Initialize experiments (non-dist as an example)"""
         self.args = args
         self.config = self.args.__dict__
@@ -32,77 +29,24 @@ class BaseExperiment(object):
 
         base_dir = args.res_dir if args.res_dir is not None else 'work_dirs'
         save_dir = osp.join(base_dir, args.ex_name if not args.ex_name.startswith(args.res_dir) \
-            else args.ex_name.split(args.res_dir+'/')[-1])
+            else args.ex_name.split(args.res_dir + '/')[-1])
         ckpt_dir = osp.join(save_dir, 'checkpoints')
-
-        checkpoint_path = None
-        if args.auto_resume and args.resume_from is None:
-            if osp.exists(osp.join(ckpt_dir, 'last.ckpt')):
-                checkpoint_path = osp.join(ckpt_dir, 'last.ckpt')
-                print('Resuming from {}'.format(checkpoint_path))
-            else:
-                print("Last checkpoint not found! Cannot resume the training.")
-                sys.exit()
-        if args.resume_from is not None:
-            if osp.exists(osp.join(base_dir, args.resume_from)):
-                checkpoint_path = osp.join(base_dir, args.resume_from)
-                print('Resuming from {}'.format(checkpoint_path))
-            else:
-                print(f"The checkpoint not found at {args.resume_from}! Cannot resume the training.")
-                sys.exit()
 
         seed_everything(args.seed)
         self.data = self._get_data(dataloaders)
-        self.method = method_maps[self.args.method](steps_per_epoch=len(self.data.train_loader),
-            test_mean=self.data.test_mean, test_std=self.data.test_std, save_dir=save_dir, **self.config)
+        self.method = method_maps[self.args.method](steps_per_epoch=len(self.data.train_loader), \
+                                                    test_mean=self.data.test_mean, test_std=self.data.test_std,
+                                                    save_dir=save_dir, **self.config)
         callbacks, self.save_dir = self._load_callbacks(args, save_dir, ckpt_dir)
-        wandb_logger = WandbLogger(name=args.ex_name, project=args.project_name)
-        self.trainer = self._init_trainer(self.args, callbacks, strategy, wandb_logger, checkpoint_path)
+        self.trainer = self._init_trainer(self.args, callbacks, strategy)
 
-    def _init_trainer(self, args, callbacks, strategy, wandb_logger, checkpoint_path=None):
-        # Trainer(devices=args.gpus,  # Use these GPUs
-        #             strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
-        #             accelerator='gpu',  # Use distributed data parallel
-        #             callbacks=callbacks,
-        #             benchmark=True,
-        #             enable_progress_bar=False,
-        #             logger=wandb_logger,
-        #             resume_from_checkpoint=checkpoint_path
-
-        return Trainer(
-                    devices=args.gpus,  # Use these GPUs
-                    max_epochs=args.epoch,  # Maximum number of epochs to train for
-                    strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
-                    accelerator='gpu',  # Use distributed data parallel
-                    callbacks=callbacks,
-                    benchmark=True,
-                    enable_progress_bar=False,
-                    logger=wandb_logger,
-                    num_nodes=args.nnodes
-                    )
-
-        # if args.dist:
-        #     return Trainer(
-        #             max_epochs=args.epoch,  # Maximum number of epochs to train for
-        #             strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
-        #             accelerator='gpu',  # Use distributed data parallel
-        #             callbacks=callbacks,
-        #             benchmark=True,
-        #             enable_progress_bar=False,
-        #             logger=wandb_logger,
-        #             num_nodes=args.nnodes,
-        #             gpus=1
-        #             )
-        # else:
-        #     return Trainer(devices=args.gpus,  # Use these GPUs
-        #             max_epochs=args.epoch,  # Maximum number of epochs to train for
-        #             strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
-        #             accelerator='gpu',  # Use distributed data parallel
-        #             callbacks=callbacks,
-        #             benchmark=True,
-        #             enable_progress_bar=False,
-        #             logger=wandb_logger
-        #             )
+    def _init_trainer(self, args, callbacks, strategy):
+        return Trainer(devices=args.gpus,  # Use these GPUs
+                       max_epochs=args.epoch,  # Maximum number of epochs to train for
+                       strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
+                       accelerator='gpu',  # Use distributed data parallel
+                       callbacks=callbacks
+                       )
 
     def _load_callbacks(self, args, save_dir, ckpt_dir):
         method_info = None
@@ -111,13 +55,13 @@ class BaseExperiment(object):
                 method_info = self.display_method_info(args)
 
         setup_callback = SetupCallback(
-            prefix = 'train' if (not args.test) else 'test',
-            setup_time = time.strftime('%Y%m%d_%H%M%S', time.localtime()),
-            save_dir = save_dir,
-            ckpt_dir = ckpt_dir,
-            args = args,
-            method_info = method_info,
-            argv_content = sys.argv + ["gpus: {}".format(torch.cuda.device_count())],
+            prefix='train' if (not args.test) else 'test',
+            setup_time=time.strftime('%Y%m%d_%H%M%S', time.localtime()),
+            save_dir=save_dir,
+            ckpt_dir=ckpt_dir,
+            args=args,
+            method_info=method_info,
+            argv_content=sys.argv + ["gpus: {}".format(torch.cuda.device_count())],
         )
 
         ckpt_callback = BestCheckpointCallback(
@@ -130,10 +74,9 @@ class BaseExperiment(object):
             every_n_epochs=args.log_step,
         )
 
-        batchend_callback = BatchEndCallback()
         epochend_callback = EpochEndCallback()
 
-        callbacks = [setup_callback, ckpt_callback, epochend_callback, batchend_callback]
+        callbacks = [setup_callback, ckpt_callback, epochend_callback]
         if args.sched:
             callbacks.append(plc.LearningRateMonitor(logging_interval=None))
         return callbacks, save_dir
@@ -157,7 +100,7 @@ class BaseExperiment(object):
             ckpt = torch.load(osp.join(self.save_dir, 'checkpoints', 'best.ckpt'))
             self.method.load_state_dict(ckpt['state_dict'])
         self.trainer.test(self.method, self.data)
-    
+
     def display_method_info(self, args):
         """Plot the basic infomation of supported methods"""
         device = torch.device(args.device)
@@ -187,7 +130,7 @@ class BaseExperiment(object):
             _tmp_flag = torch.ones(1, args.total_length - 2, Hp, Wp, Cp).to(device)
             input_dummy = (_tmp_input, _tmp_flag)
         elif args.method == 'prednet':
-           input_dummy = torch.ones(1, 1, C, H, W, requires_grad=True).to(device)
+            input_dummy = torch.ones(1, 1, C, H, W, requires_grad=True).to(device)
         else:
             raise ValueError(f'Invalid method name {args.method}')
 
