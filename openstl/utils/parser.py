@@ -173,6 +173,7 @@ def default_parser():
         'filter_bias_and_bn': False,
         # Lightning parameters
         'gpus': [0],
-        'metric_for_bestckpt': 'val_loss'
+        'metric_for_bestckpt': 'val_loss',
+        'nnodes': 1
     }
     return default_values

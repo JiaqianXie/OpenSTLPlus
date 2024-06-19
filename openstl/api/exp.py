@@ -9,7 +9,7 @@ import torch
 
 from openstl.methods import method_maps
 from openstl.datasets import BaseDataModule
-from openstl.utils import (get_dataset, measure_throughput, SetupCallback, EpochEndCallback, BestCheckpointCallback)
+from openstl.utils import (get_dataset, measure_throughput, SetupCallback, EpochEndCallback, BestCheckpointCallback, BatchEndCallback)
 
 import argparse
 from pytorch_lightning import seed_everything, Trainer
@@ -19,7 +19,7 @@ import pytorch_lightning.callbacks as plc
 class BaseExperiment(object):
     """The basic class of PyTorch training and evaluation."""
 
-    def __init__(self, args, dataloaders=None, strategy='ddp'):
+    def __init__(self, args, dataloaders=None, strategy='ddp_find_unused_parameters_true'):
         """Initialize experiments (non-dist as an example)"""
         self.args = args
         self.config = self.args.__dict__
@@ -45,7 +45,9 @@ class BaseExperiment(object):
                        max_epochs=args.epoch,  # Maximum number of epochs to train for
                        strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
                        accelerator='gpu',  # Use distributed data parallel
-                       callbacks=callbacks
+                       callbacks=callbacks,
+                       enable_progress_bar=False,
+                       num_nodes=args.nnodes
                        )
 
     def _load_callbacks(self, args, save_dir, ckpt_dir):
@@ -76,7 +78,9 @@ class BaseExperiment(object):
 
         epochend_callback = EpochEndCallback()
 
-        callbacks = [setup_callback, ckpt_callback, epochend_callback]
+        batchend_callback = BatchEndCallback()
+
+        callbacks = [setup_callback, ckpt_callback, epochend_callback, batchend_callback]
         if args.sched:
             callbacks.append(plc.LearningRateMonitor(logging_interval=None))
         return callbacks, save_dir
