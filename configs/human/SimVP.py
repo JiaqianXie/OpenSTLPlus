@@ -1,4 +1,5 @@
 method = 'SimVP'
+project_name = 'video-prediction'
 # model
 spatio_kernel_enc = 3
 spatio_kernel_dec = 3
@@ -9,6 +10,7 @@ N_T = 8
 N_S = 4
 # training
 lr = 1e-3
-batch_size = 16
-sched = 'cosine'
+batch_size = 1
+val_batch_size = 1
+sched = 'onecycle'
 warmup_epoch = 0

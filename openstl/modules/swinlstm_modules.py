@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
-from timm.models.swin_transformer import SwinTransformerBlock, window_reverse, PatchEmbed, PatchMerging, window_partition
+from timm.models.swin_transformer import SwinTransformerBlock, window_reverse, PatchEmbed, PatchMerging, \
+    window_partition
 from timm.models.layers import to_2tuple
+
 
 class SwinLSTMCell(nn.Module):
     def __init__(self, dim, input_resolution, num_heads, window_size, depth,
@@ -14,7 +16,7 @@ class SwinLSTMCell(nn.Module):
         super(SwinLSTMCell, self).__init__()
 
         self.STBs = nn.ModuleList(
-            STB(i, dim=dim, input_resolution=input_resolution, depth=depth, 
+            STB(i, dim=dim, input_resolution=input_resolution, depth=depth,
                 num_heads=num_heads, window_size=window_size, mlp_ratio=mlp_ratio,
                 qkv_bias=qkv_bias, qk_scale=qk_scale, drop=drop, attn_drop=attn_drop,
                 drop_path=drop_path, norm_layer=norm_layer, flag=flag)
@@ -23,7 +25,7 @@ class SwinLSTMCell(nn.Module):
     def forward(self, xt, hidden_states):
         """
         Args:
-        xt: input for t period 
+        xt: input for t period
         hidden_states: [hx, cx] hidden_states for t-1 period
         """
         if hidden_states is None:
@@ -33,7 +35,7 @@ class SwinLSTMCell(nn.Module):
 
         else:
             hx, cx = hidden_states
-        
+
         outputs = []
         for index, layer in enumerate(self.STBs):
             if index == 0:
@@ -46,7 +48,7 @@ class SwinLSTMCell(nn.Module):
                 if index % 2 == 1:
                     x = layer(outputs[-1], None)
                     outputs.append(x)
-                
+
         o_t = outputs[-1]
         Ft = torch.sigmoid(o_t)
 
@@ -57,9 +59,10 @@ class SwinLSTMCell(nn.Module):
 
         return Ht, (Ht, Ct)
 
+
 class STB(SwinTransformerBlock):
-    def __init__(self, index, dim, input_resolution, depth, num_heads, window_size, 
-                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., 
+    def __init__(self, index, dim, input_resolution, depth, num_heads, window_size,
+                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0.,
                  drop_path=0., norm_layer=nn.LayerNorm, flag=None):
         if flag == 0:
             drop_path = drop_path[depth - index - 1]
@@ -67,11 +70,11 @@ class STB(SwinTransformerBlock):
             drop_path = drop_path[index]
         elif flag == 2:
             drop_path = drop_path
-        super(STB, self).__init__(dim=dim, input_resolution=input_resolution, 
+        super(STB, self).__init__(dim=dim, input_resolution=input_resolution,
                                   num_heads=num_heads, window_size=window_size,
                                   shift_size=0 if (index % 2 == 0) else window_size // 2,
                                   mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
-                                  proj_drop=drop, attn_drop=attn_drop,
+                                  drop=drop, attn_drop=attn_drop,
                                   drop_path=drop_path,
                                   norm_layer=norm_layer)
         self.red = nn.Linear(2 * dim, dim)
@@ -90,54 +93,36 @@ class STB(SwinTransformerBlock):
         x = x.view(B, H, W, C)
 
         # cyclic shift
-        has_shift = any(self.shift_size)
-        # if self.shift_size > 0: # old
-        if has_shift: # new
-            shifted_x = torch.roll(x, shifts=(-self.shift_size[0], -self.shift_size[1]), dims=(1, 2))
+        if self.shift_size > 0:
+            shifted_x = torch.roll(x, shifts=(-self.shift_size, -self.shift_size), dims=(1, 2))
         else:
             shifted_x = x
 
-        # pad for resolution not divisible by window size
-        pad_h = (self.window_size[0] - H % self.window_size[0]) % self.window_size[0]
-        pad_w = (self.window_size[1] - W % self.window_size[1]) % self.window_size[1]
-        shifted_x = torch.nn.functional.pad(shifted_x, (0, 0, 0, pad_w, 0, pad_h))
-        Hp, Wp = H + pad_h, W + pad_w
-
         # partition windows
         x_windows = window_partition(shifted_x, self.window_size)  # num_win*B, window_size, window_size, C
-        x_windows = x_windows.view(-1, self.window_size[0] * self.window_size[1], C)  # num_win*B, window_size*window_size, C
+        x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # num_win*B, window_size*window_size, C
 
         # W-MSA/SW-MSA
         attn_windows = self.attn(x_windows, mask=self.attn_mask)  # num_win*B, window_size*window_size, C
 
-        # merge windows old
-        # attn_windows = attn_windows.view(-1, self.window_size[0], self.window_size[1], C)
-        # shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
-
         # merge windows
-        attn_windows = attn_windows.view(-1, self.window_size[0], self.window_size[1], C)
-        shifted_x = window_reverse(attn_windows, self.window_size, Hp, Wp)  # B H' W' C
-        shifted_x = shifted_x[:, :H, :W, :].contiguous()
+        attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
+        shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
 
-        # reverse cyclic shift old
-        # if self.shift_size > 0: # new
-        #     x = torch.roll(shifted_x, shifts=(self.shift_size[0], self.shift_size[1]), dims=(1, 2))
-        # else:
-        #     x = shifted_x
-
-        if has_shift:
-            x = torch.roll(shifted_x, shifts=self.shift_size, dims=(1, 2))
+        # reverse cyclic shift
+        if self.shift_size > 0:
+            x = torch.roll(shifted_x, shifts=(self.shift_size, self.shift_size), dims=(1, 2))
         else:
             x = shifted_x
-
         x = x.view(B, H * W, C)
 
         # FFN
-        x = shortcut + self.drop_path1(x)
-        x = x + self.drop_path2(self.mlp(self.norm2(x)))
+        x = shortcut + self.drop_path(x)
+        x = x + self.drop_path(self.mlp(self.norm2(x)))
 
         return x
-        
+
+
 class PatchInflated(nn.Module):
     r""" Tensor to Patch Inflating
 
@@ -169,7 +154,8 @@ class PatchInflated(nn.Module):
         x = self.Conv(x)
 
         return x
-       
+
+
 class PatchExpanding(nn.Module):
     r""" Patch Expanding Layer.
 
@@ -200,6 +186,7 @@ class PatchExpanding(nn.Module):
 
         return x
 
+
 class UpSample(nn.Module):
     def __init__(self, img_size, patch_size, in_chans, embed_dim, depths_upsample, num_heads, window_size, mlp_ratio=4.,
                  qkv_bias=True, qk_scale=None, drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1,
@@ -210,7 +197,8 @@ class UpSample(nn.Module):
         self.num_layers = len(depths_upsample)
         self.embed_dim = embed_dim
         self.mlp_ratio = mlp_ratio
-        self.patch_embed = PatchEmbed(img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim, norm_layer=nn.LayerNorm)
+        self.patch_embed = PatchEmbed(img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim,
+                                      norm_layer=nn.LayerNorm)
         patches_resolution = self.patch_embed.grid_size
         self.Unembed = PatchInflated(in_chans=in_chans, embed_dim=embed_dim, input_resolution=patches_resolution)
 
@@ -252,6 +240,7 @@ class UpSample(nn.Module):
 
         return hidden_states_up, x
 
+
 class DownSample(nn.Module):
     def __init__(self, img_size, patch_size, in_chans, embed_dim, depths_downsample, num_heads, window_size,
                  mlp_ratio=4., qkv_bias=True, qk_scale=None, drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1,
@@ -261,8 +250,9 @@ class DownSample(nn.Module):
         self.num_layers = len(depths_downsample)
         self.embed_dim = embed_dim
         self.mlp_ratio = mlp_ratio
-        self.patch_embed = PatchEmbed(img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim, norm_layer=nn.LayerNorm)
-        self.patches_resolution = self.patch_embed.grid_size
+        self.patch_embed = PatchEmbed(img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim,
+                                      norm_layer=nn.LayerNorm)
+        patches_resolution = self.patch_embed.grid_size
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths_downsample))]
 
@@ -270,16 +260,13 @@ class DownSample(nn.Module):
         self.downsample = nn.ModuleList()
 
         for i_layer in range(self.num_layers):
-            # old
-            # downsample = PatchMerging(input_resolution=(patches_resolution[0] // (2 ** i_layer),
-            #                                             patches_resolution[1] // (2 ** i_layer)),
-            #                           dim=int(embed_dim * 2 ** i_layer))
-            # new
-            downsample = PatchMerging(dim=int(embed_dim * 2 ** i_layer))
+            downsample = PatchMerging(input_resolution=(patches_resolution[0] // (2 ** i_layer),
+                                                        patches_resolution[1] // (2 ** i_layer)),
+                                      dim=int(embed_dim * 2 ** i_layer))
 
             layer = SwinLSTMCell(dim=int(embed_dim * 2 ** i_layer),
-                                 input_resolution=(self.patches_resolution[0] // (2 ** i_layer),
-                                                   self.patches_resolution[1] // (2 ** i_layer)),
+                                 input_resolution=(patches_resolution[0] // (2 ** i_layer),
+                                                   patches_resolution[1] // (2 ** i_layer)),
                                  depth=depths_downsample[i_layer],
                                  num_heads=num_heads[i_layer],
                                  window_size=window_size,
@@ -293,49 +280,49 @@ class DownSample(nn.Module):
             self.downsample.append(downsample)
 
     def forward(self, x, y):
+
         x = self.patch_embed(x)
+
         hidden_states_down = []
-        H, W = self.patches_resolution
+
         for index, layer in enumerate(self.layers):
             x, hidden_state = layer(x, y[index])
-            B, HW, C = x.shape
-            x = x.view(B, H, W, C)
             x = self.downsample[index](x)
-            B, H, W, C = x.shape
-            x = x.view(B, W*H, C)
             hidden_states_down.append(hidden_state)
 
         return hidden_states_down, x
 
-class STconvert(nn.Module): 
-    def __init__(self, img_size, patch_size, in_chans, embed_dim, depths, num_heads, 
-                 window_size, mlp_ratio=4., qkv_bias=True, qk_scale=None, drop_rate=0., 
+
+class STconvert(nn.Module):
+    def __init__(self, img_size, patch_size, in_chans, embed_dim, depths, num_heads,
+                 window_size, mlp_ratio=4., qkv_bias=True, qk_scale=None, drop_rate=0.,
                  attn_drop_rate=0., drop_path_rate=0.1, norm_layer=nn.LayerNorm, flag=2):
         super(STconvert, self).__init__()
-        
+
         self.embed_dim = embed_dim
         self.mlp_ratio = mlp_ratio
-        self.patch_embed = PatchEmbed(img_size=img_size, patch_size=patch_size, 
-                                      in_chans=in_chans, embed_dim=embed_dim, 
+        self.patch_embed = PatchEmbed(img_size=img_size, patch_size=patch_size,
+                                      in_chans=in_chans, embed_dim=embed_dim,
                                       norm_layer=norm_layer)
         patches_resolution = self.patch_embed.grid_size
 
         self.patch_inflated = PatchInflated(in_chans=in_chans, embed_dim=embed_dim,
                                             input_resolution=patches_resolution)
 
-        self.layer = SwinLSTMCell(dim=embed_dim, 
-                                  input_resolution=(patches_resolution[0], patches_resolution[1]), 
+        self.layer = SwinLSTMCell(dim=embed_dim,
+                                  input_resolution=(patches_resolution[0], patches_resolution[1]),
                                   depth=depths, num_heads=num_heads,
                                   window_size=window_size, mlp_ratio=mlp_ratio,
                                   qkv_bias=qkv_bias, qk_scale=qk_scale,
                                   drop=drop_rate, attn_drop=attn_drop_rate,
                                   drop_path=drop_path_rate, norm_layer=norm_layer,
                                   flag=flag)
+
     def forward(self, x, h=None):
         x = self.patch_embed(x)
 
         x, hidden_state = self.layer(x, h)
 
         x = torch.sigmoid(self.patch_inflated(x))
-        
+
         return x, hidden_state
