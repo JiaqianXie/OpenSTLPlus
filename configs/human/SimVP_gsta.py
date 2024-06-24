@@ -15,3 +15,4 @@ batch_size = 16
 val_batch_size = 16
 sched = 'onecycle'
 warmup_epoch = 0
+epoch = 50
