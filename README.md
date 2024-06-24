@@ -1,5 +1,5 @@
 <p align="center" width="100%">
-  <img src='https://github.com/JiaqianXie/OpenSTLPlus/blob/f0e69b10c4e697707dcad115d209758b865541af/icon.png' width="50%">
+  <img src='https://github.com/JiaqianXie/OpenSTLPlus/blob/f0e69b10c4e697707dcad115d209758b865541af/icon.png' width="30%">
 </p>
 
 # OpenSTLPlus: An improved version of the benchmark toolbox for spatio-temporal predictive learning
