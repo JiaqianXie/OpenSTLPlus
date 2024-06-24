@@ -1,45 +1,15 @@
 <p align="center" width="100%">
-  <img src='https://github-production-user-asset-6210df.s3.amazonaws.com/44519745/246222783-fdda535f-e132-4fdd-8871-2408cd29a264.png' width="50%">
+  <img src='https://github.com/JiaqianXie/OpenSTLPlus/blob/f0e69b10c4e697707dcad115d209758b865541af/icon.png' width="50%">
 </p>
 
-# OpenSTL: A Comprehensive Benchmark of Spatio-Temporal Predictive Learning
+# OpenSTLPlus: An improved version of the benchmark toolbox for spatio-temporal predictive learning
+
+## Introduction
 
 
 
-## New Update
+## Installation
 
-- added save best checkpoint hook. Usage: add `save_best_hook = dict()` in your config file. Parameters: 
-  - `metrics=["mse", "mae"]`: Specify a list of metrics to determine the best checkpoint.
-  - `save_lowest=True`: Set this parameter to `True` to save the checkpoint with the lowest sum of metrics, or `False` to save the one with the highest sum.
-- added wandb logging hook. Usage: add `wandb_hook = dict()` in your config file. Ensure you have initialised your WandB session on your host machine by running `wandb login`. Parameters: 
-  - `metric_config={"mse":"min", "mae":"min"})`: Define the recording criteria for specific metrics. Here, `min` denotes recording the minimal value, while `max` records the maximum value for the specified metric. 
-
-## New Installation
-To install all the required packages, in OpenSTLPlus repo you can run `./build_env.sh`. This will create a conda env named `openstlplus` in your system.
-
-<p align="left">
-<a href="https://arxiv.org/abs/2306.11249" alt="arXiv">
-    <img src="https://img.shields.io/badge/arXiv-2306.11249-b31b1b.svg?style=flat" /></a>
-<a href="https://github.com/chengtan9907/OpenSTL/blob/master/LICENSE" alt="license">
-    <img src="https://img.shields.io/badge/license-Apache--2.0-%23002FA7" /></a>
-<!-- <a href="https://huggingface.co/OpenSTL" alt="Huggingface">
-    <img src="https://img.shields.io/badge/huggingface-OpenSTL-blueviolet" /></a> -->
-<a href="https://openstl.readthedocs.io/en/latest/" alt="docs">
-    <img src="https://readthedocs.org/projects/openstl/badge/?version=latest" /></a>
-<a href="https://github.com/chengtan9907/OpenSTL/issues" alt="docs">
-    <img src="https://img.shields.io/github/issues-raw/chengtan9907/SimVPv2?color=%23FF9600" /></a>
-<a href="https://github.com/chengtan9907/OpenSTL/issues" alt="resolution">
-    <img src="https://img.shields.io/badge/issue%20resolution-1%20d-%23B7A800" /></a>
-<a href="https://img.shields.io/github/stars/chengtan9907/OpenSTL" alt="arXiv">
-    <img src="https://img.shields.io/github/stars/chengtan9907/OpenSTL" /></a>
-</p>
-
-[📘Documentation](https://openstl.readthedocs.io/en/latest/) |
-[🛠️Installation](docs/en/install.md) |
-[🚀Model Zoo](docs/en/model_zoos/video_benchmarks.md) |
-[🤗Huggingface](https://huggingface.co/OpenSTL) |
-[👀Visualization](docs/en/visualization/video_visualization.md) |
-[🆕News](docs/en/changelog.md)
 
 ## Introduction
 
