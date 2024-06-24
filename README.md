@@ -5,21 +5,15 @@
 # OpenSTLPlus: An improved version of the benchmark toolbox for spatio-temporal predictive learning
 
 ## Introduction
+This is an open-source benchmark toolbox built upon OpenSTL repo (https://github.com/chengtan9907/OpenSTL) for spatio-temporal predictive learning. The main features that are different from the original repo:
 
-
+list
+WanDB is optimised to show the validation performance per epoch
+Our models are integrated into the toolbox.
+The hyperparameter search is enabled.
 
 ## Installation
 
-
-## Introduction
-
-OpenSTL is a comprehensive benchmark for spatio-temporal predictive learning, encompassing a broad spectrum of methods and diverse tasks, ranging from synthetic moving object trajectories to real-world scenarios such as human motion, driving scenes, traffic flow, and weather forecasting. OpenSTL offers a modular and extensible framework, excelling in user-friendliness, organization, and comprehensiveness. The codebase is organized into three abstracted layers, namely the core layer, algorithm layer, and user interface layer, arranged from the bottom to the top.
-
-<p align="center" width="100%">
-  <img src='https://github-production-user-asset-6210df.s3.amazonaws.com/44519745/246222226-61e6b8e8-959c-4bb3-a1cd-c994b423de3f.png' width="90%">
-</p>
-
-<p align="right">(<a href="#top">back to top</a>)</p>
 
 ## Overview
 
