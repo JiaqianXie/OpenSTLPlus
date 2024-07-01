@@ -10,6 +10,7 @@ from openstl.utils import (create_parser, default_parser, get_dist_info, load_co
 
 if __name__ == '__main__':
     args = create_parser().parse_args()
+    args.test = True
     config = args.__dict__
 
     assert args.config_file is not None, "Config file is required for testing"

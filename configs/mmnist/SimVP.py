@@ -13,7 +13,3 @@ batch_size = 16
 drop_path = 0
 sched = 'onecycle'
 epoch = 200
-# EMAHook = dict(
-#     momentum=0.999,
-#     priority='NORMAL',
-# )
