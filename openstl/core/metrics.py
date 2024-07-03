@@ -244,6 +244,7 @@ def metric(pred, true, mean=None, std=None, metrics=['mae', 'mse'],
     pred = np.minimum(pred, clip_range[1])
     if 'ssim' in metrics:
         ssim = 0
+        print(pred.shape)
         for b in range(pred.shape[0]):
             for f in range(pred.shape[1]):
                 if pred.shape[2] == 1:
@@ -251,7 +252,7 @@ def metric(pred, true, mean=None, std=None, metrics=['mae', 'mse'],
                                      true[b, f].squeeze(), data_range=1)
                 else:
                     ssim += cal_ssim(pred[b, f].swapaxes(0, 2),
-                                     true[b, f].swapaxes(0, 2), multichannel=True)
+                                     true[b, f].swapaxes(0, 2), multichannel=True, channel_axis=2, data_range=1)
         eval_res['ssim'] = ssim / (pred.shape[0] * pred.shape[1])
 
     if 'psnr' in metrics:
