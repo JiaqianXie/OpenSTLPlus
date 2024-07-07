@@ -72,15 +72,15 @@ class BatchEndCallback(Callback):
 class EpochEndCallback(Callback):
     def on_train_epoch_end(self, trainer, pl_module, outputs=None):
         self.avg_train_loss = trainer.callback_metrics.get('train_loss')
-        pl_module.log("train/loss", self.avg_train_loss)
+        pl_module.log("train/loss", self.avg_train_loss, on_step=False, on_epoch=True, prog_bar=False)
 
     def on_validation_epoch_end(self, trainer, pl_module):
         lr = trainer.optimizers[0].param_groups[0]['lr']
         avg_val_loss = trainer.callback_metrics.get('val_loss')
-        pl_module.log("val/loss", avg_val_loss)
+        pl_module.log("val/loss", avg_val_loss, on_step=False, on_epoch=True, prog_bar=False)
 
         if hasattr(self, 'avg_train_loss'):
-            print_log(f"Epoch {trainer.current_epoch}: Lr: {lr:.7f} | Train Loss: {self.avg_train_loss:.7f} | Vali Loss: {avg_val_loss:.7f}")
+            print_log(f"Epoch {trainer.current_epoch}: Lr: {lr:.7f} | Train Loss: {self.avg_train_loss:.7f} | Val Loss: {avg_val_loss:.7f}")
 
 class BestCheckpointCallback(ModelCheckpoint):
     def on_validation_epoch_end(self, trainer, pl_module):

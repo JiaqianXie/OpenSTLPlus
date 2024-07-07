@@ -25,7 +25,7 @@ def create_parser():
     parser.add_argument('--nnodes', default=1, type=int, help="Number of nodes for dist training")
     parser.add_argument('--res_dir', default='work_dirs', type=str)
     parser.add_argument('--ex_name', '-ex', default='Debug', type=str)
-    parser.add_argument('--fp16', action='store_false', default=True,
+    parser.add_argument('--fp16', action='store_true', default=False,
                         help='Whether to use Native AMP for mixed precision training (PyTorch=>1.6.0)')
     parser.add_argument('--torchscript', action='store_true', default=False,
                         help='Whether to use torchscripted model')

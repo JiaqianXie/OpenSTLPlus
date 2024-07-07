@@ -9,7 +9,7 @@ import torch
 
 from openstl.methods import method_maps
 from openstl.datasets import BaseDataModule
-from openstl.utils import (get_dataset, measure_throughput, SetupCallback, EpochEndCallback, BestCheckpointCallback)
+from openstl.utils import (get_dataset, measure_throughput, SetupCallback, EpochEndCallback, BestCheckpointCallback, BatchEndCallback)
 
 import argparse
 from pytorch_lightning import seed_everything, Trainer
@@ -19,10 +19,12 @@ import pytorch_lightning.callbacks as plc
 class BaseExperiment(object):
     """The basic class of PyTorch training and evaluation."""
 
-    def __init__(self, args, dataloaders=None, strategy='ddp'):
+    def __init__(self, args, dataloaders=None, strategy='ddp_find_unused_parameters_true'):
         """Initialize experiments (non-dist as an example)"""
         self.args = args
         self.config = self.args.__dict__
+        print("config")
+        print(self.config)
         self.method = None
         self.args.method = self.args.method.lower()
         self._dist = self.args.dist
@@ -45,7 +47,10 @@ class BaseExperiment(object):
                        max_epochs=args.epoch,  # Maximum number of epochs to train for
                        strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
                        accelerator='gpu',  # Use distributed data parallel
-                       callbacks=callbacks
+                       callbacks=callbacks,
+                       num_nodes=args.nnodes,
+                       benchmark=True,
+                       enable_progress_bar=False
                        )
 
     def _load_callbacks(self, args, save_dir, ckpt_dir):
@@ -75,8 +80,9 @@ class BaseExperiment(object):
         )
 
         epochend_callback = EpochEndCallback()
+        batchend_callback = BatchEndCallback()
 
-        callbacks = [setup_callback, ckpt_callback, epochend_callback]
+        callbacks = [setup_callback, ckpt_callback, epochend_callback, batchend_callback]
         if args.sched:
             callbacks.append(plc.LearningRateMonitor(logging_interval=None))
         return callbacks, save_dir
@@ -84,21 +90,21 @@ class BaseExperiment(object):
     def _get_data(self, dataloaders=None):
         """Prepare datasets and dataloaders"""
         if dataloaders is None:
-            train_loader, vali_loader, test_loader = \
+            train_loader, val_loader, test_loader = \
                 get_dataset(self.args.dataname, self.config)
         else:
-            train_loader, vali_loader, test_loader = dataloaders
+            train_loader, val_loader, test_loader = dataloaders
 
-        vali_loader = test_loader if vali_loader is None else vali_loader
-        return BaseDataModule(train_loader, vali_loader, test_loader)
+        val_loader = test_loader if val_loader is None else val_loader
+        return BaseDataModule(train_loader, val_loader, test_loader)
 
     def train(self):
         self.trainer.fit(self.method, self.data)
 
     def test(self):
-        if self.args.test:
-            ckpt = torch.load(osp.join(self.save_dir, 'checkpoints', 'best.ckpt'))
-            self.method.load_state_dict(ckpt['state_dict'])
+        # if self.args.test:
+        ckpt = torch.load(osp.join(self.save_dir, 'checkpoints', 'best.ckpt'))
+        self.method.load_state_dict(ckpt['state_dict'])
         self.trainer.test(self.method, self.data)
 
     def display_method_info(self, args):

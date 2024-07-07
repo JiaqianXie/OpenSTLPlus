@@ -50,8 +50,8 @@ class Base_method(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         batch_x, batch_y = batch
         pred_y = self(batch_x, batch_y)
-        loss = self.criterion(pred_y, batch_y)
-        self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=False)
+        loss = self.criterion(pred_y, batch_y) * batch_x.shape[-2] * batch_x.shape[-1]
+        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=False)
         return loss
     
     def test_step(self, batch, batch_idx):

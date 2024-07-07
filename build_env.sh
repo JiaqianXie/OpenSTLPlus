@@ -1,6 +1,6 @@
 #!/bin/bash
-# conda create -n OpenSTL -y python=3.10
-# conda activate OpenSTL
+# conda create -n OpenSTLPlus -y python=3.10
+# conda activate OpenSTLPlus
 conda install -y pytorch torchvision pytorch-cuda=12.1 -c pytorch -c nvidia
 conda install -y lightning -c conda-forge
 conda install -y -c conda-forge xarray dask netCDF4 bottleneck
