@@ -12,4 +12,4 @@ lr = 1e-4
 batch_size = 48
 val_batch_size = 48
 sched = 'onecycle'
-epoch = 400
+epoch = 200

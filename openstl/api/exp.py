@@ -14,6 +14,7 @@ from openstl.utils import (get_dataset, measure_throughput, SetupCallback, Epoch
 import argparse
 from pytorch_lightning import seed_everything, Trainer
 import pytorch_lightning.callbacks as plc
+from lightning.pytorch.loggers import WandbLogger
 
 
 class BaseExperiment(object):
@@ -43,6 +44,8 @@ class BaseExperiment(object):
         self.trainer = self._init_trainer(self.args, callbacks, strategy)
 
     def _init_trainer(self, args, callbacks, strategy):
+        wandb_logger = WandbLogger(log_model="all", name=args.ex_name, project="video-prediction")
+        # wandb_logger.experiment.config.update(vars(args))
         return Trainer(devices=args.gpus,  # Use these GPUs
                        max_epochs=args.epoch,  # Maximum number of epochs to train for
                        strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
@@ -50,7 +53,8 @@ class BaseExperiment(object):
                        callbacks=callbacks,
                        num_nodes=args.nnodes,
                        benchmark=True,
-                       enable_progress_bar=False
+                       enable_progress_bar=False,
+                       logger=wandb_logger
                        )
 
     def _load_callbacks(self, args, save_dir, ckpt_dir):
