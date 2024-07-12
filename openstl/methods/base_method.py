@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import torch.nn as nn
 import os.path as osp
@@ -5,7 +7,8 @@ import pytorch_lightning as pl
 from openstl.utils import print_log, check_dir
 from openstl.core import get_optim_scheduler
 from openstl.core import metric
-
+import pickle
+import glob
 
 class Base_method(pl.LightningModule):
 
@@ -58,13 +61,30 @@ class Base_method(pl.LightningModule):
         batch_x, batch_y = batch
         pred_y = self(batch_x, batch_y)
         outputs = {'inputs': batch_x.cpu().numpy(), 'preds': pred_y.cpu().numpy(), 'trues': batch_y.cpu().numpy()}
-        self.test_outputs.append(outputs)
+        if self.hparams.mem_efficient_test:
+            tmp_dir = osp.join(self.hparams.save_dir, "intermediate_test_results")
+            pickle.dump(outputs, open(osp.join(tmp_dir, f"output_{batch_idx}.pkl"), "wb"))
+        else:
+            self.test_outputs.append(outputs)
         return outputs
 
     def on_test_epoch_end(self):
         results_all = {}
-        for k in self.test_outputs[0].keys():
-            results_all[k] = np.concatenate([batch[k] for batch in self.test_outputs], axis=0)
+        if self.hparams.mem_efficient_test:
+            tmp_dir = osp.join(self.hparams.save_dir, "intermediate_test_results")
+            for filename in glob.glob(os.path.join(tmp_dir, '*.pkl'), recursive=True):
+                batch = pickle.load(open(filename, "rb"))
+                keys = batch.keys()
+                for k in keys:
+                    if k not in results_all:
+                        results_all[k] = []
+                    else:
+                        results_all[k].append(batch[k])
+            for k, v in results_all.items():
+                results_all[k] = np.concatenate(v, axis=0)
+        else:
+            for k in self.test_outputs[0].keys():
+                results_all[k] = np.concatenate([batch[k] for batch in self.test_outputs], axis=0)
         
         eval_res, eval_log = metric(results_all['preds'], results_all['trues'],
             self.hparams.test_mean, self.hparams.test_std, metrics=self.metric_list, 

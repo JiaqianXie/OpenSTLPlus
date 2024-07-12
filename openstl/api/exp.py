@@ -15,7 +15,8 @@ import argparse
 from pytorch_lightning import seed_everything, Trainer
 import pytorch_lightning.callbacks as plc
 from lightning.pytorch.loggers import WandbLogger
-
+import shutil
+import os
 
 class BaseExperiment(object):
     """The basic class of PyTorch training and evaluation."""
@@ -42,6 +43,11 @@ class BaseExperiment(object):
                                                     save_dir=save_dir, **self.config)
         callbacks, self.save_dir = self._load_callbacks(args, save_dir, ckpt_dir)
         self.trainer = self._init_trainer(self.args, callbacks, strategy)
+        if self.args.mem_efficient_test:
+            tmp_dir = osp.join(save_dir, "intermediate_test_results")
+            if osp.exists(tmp_dir):
+                shutil.rmtree(tmp_dir)
+            os.makedirs(tmp_dir, exist_ok=True)
 
     def _init_trainer(self, args, callbacks, strategy):
         wandb_logger = WandbLogger(log_model="all", name=args.ex_name, project="video-prediction")

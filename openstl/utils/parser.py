@@ -38,7 +38,8 @@ def create_parser():
     parser.add_argument('--resume_from', type=str, default=None, help='the checkpoint file to resume from')
     parser.add_argument('--auto_resume', action='store_true', default=False,
                         help='When training was interupted, resume from the latest checkpoint')
-
+    parser.add_argument("--mem_efficient_test", action='store_true', default=False,
+                        help="Whether save intermediate test results in the tmp dir to save the RAM memory usage")
     # dataset parameters
     parser.add_argument('--batch_size', '-b', default=16, type=int, help='Training batch size')
     parser.add_argument('--val_batch_size', '-vb', default=16, type=int, help='Validation batch size')
