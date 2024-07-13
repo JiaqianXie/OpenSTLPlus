@@ -50,18 +50,29 @@ class BaseExperiment(object):
             os.makedirs(tmp_dir, exist_ok=True)
 
     def _init_trainer(self, args, callbacks, strategy):
-        wandb_logger = WandbLogger(log_model="all", name=args.ex_name, project="video-prediction")
-        # wandb_logger.experiment.config.update(vars(args))
-        return Trainer(devices=args.gpus,  # Use these GPUs
-                       max_epochs=args.epoch,  # Maximum number of epochs to train for
-                       strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
-                       accelerator='gpu',  # Use distributed data parallel
-                       callbacks=callbacks,
-                       num_nodes=args.nnodes,
-                       benchmark=True,
-                       enable_progress_bar=False,
-                       logger=wandb_logger
-                       )
+        if args.test:
+            return Trainer(devices=args.gpus,  # Use these GPUs
+                           max_epochs=args.epoch,  # Maximum number of epochs to train for
+                           strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
+                           accelerator='gpu',  # Use distributed data parallel
+                           callbacks=callbacks,
+                           num_nodes=args.nnodes,
+                           benchmark=True,
+                           enable_progress_bar=True,
+                           )
+        else:
+            wandb_logger = WandbLogger(log_model="all", name=args.ex_name, project="video-prediction")
+            # wandb_logger.experiment.config.update(vars(args))
+            return Trainer(devices=args.gpus,  # Use these GPUs
+                           max_epochs=args.epoch,  # Maximum number of epochs to train for
+                           strategy=strategy,  # 'ddp', 'deepspeed_stage_2', 'ddp_find_unused_parameters_false'
+                           accelerator='gpu',  # Use distributed data parallel
+                           callbacks=callbacks,
+                           num_nodes=args.nnodes,
+                           benchmark=True,
+                           enable_progress_bar=False,
+                           logger=wandb_logger
+                           )
 
     def _load_callbacks(self, args, save_dir, ckpt_dir):
         method_info = None

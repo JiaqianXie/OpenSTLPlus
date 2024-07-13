@@ -9,7 +9,8 @@ from openstl.core import get_optim_scheduler
 from openstl.core import metric
 import pickle
 import glob
-
+import shutil
+import sys
 class Base_method(pl.LightningModule):
 
     def __init__(self, **args):
@@ -45,10 +46,10 @@ class Base_method(pl.LightningModule):
         }
 
     def forward(self, batch):
-        NotImplementedError
+        raise NotImplementedError
     
     def training_step(self, batch, batch_idx):
-        NotImplementedError
+        raise NotImplementedError
 
     def validation_step(self, batch, batch_idx):
         batch_x, batch_y = batch
@@ -72,31 +73,28 @@ class Base_method(pl.LightningModule):
         results_all = {}
         if self.hparams.mem_efficient_test:
             tmp_dir = osp.join(self.hparams.save_dir, "intermediate_test_results")
-            for filename in glob.glob(os.path.join(tmp_dir, '*.pkl'), recursive=True):
-                batch = pickle.load(open(filename, "rb"))
-                keys = batch.keys()
-                for k in keys:
-                    if k not in results_all:
-                        results_all[k] = []
-                    else:
-                        results_all[k].append(batch[k])
-            for k, v in results_all.items():
-                results_all[k] = np.concatenate(v, axis=0)
+            pickle.dump(self.metric_list, open(osp.join(tmp_dir, "metric_list.pkl"), "wb"))
+            pickle.dump(self.channel_names, open(osp.join(tmp_dir, "channel_names.pkl"), "wb"))
+            pickle.dump(self.spatial_norm, open(osp.join(tmp_dir, "spatial_norm.pkl"), "wb"))
+            pickle.dump(self.hparams, open(osp.join(tmp_dir, "hparams.pkl"), "wb"))
+            print("Entering memory efficient test mode. Please run tools/mem_efficient_test.py")
+            sys.exit(0)
         else:
             for k in self.test_outputs[0].keys():
                 results_all[k] = np.concatenate([batch[k] for batch in self.test_outputs], axis=0)
         
-        eval_res, eval_log = metric(results_all['preds'], results_all['trues'],
-            self.hparams.test_mean, self.hparams.test_std, metrics=self.metric_list, 
-            channel_names=self.channel_names, spatial_norm=self.spatial_norm,
-            threshold=self.hparams.get('metric_threshold', None))
-        
-        results_all['metrics'] = np.array([eval_res['mae'], eval_res['mse']])
+            eval_res, eval_log = metric(results_all['preds'], results_all['trues'],
+                self.hparams.test_mean, self.hparams.test_std, metrics=self.metric_list,
+                channel_names=self.channel_names, spatial_norm=self.spatial_norm,
+                threshold=self.hparams.get('metric_threshold', None))
 
-        if self.trainer.is_global_zero:
-            print_log(eval_log)
-            folder_path = check_dir(osp.join(self.hparams.save_dir, 'saved'))
+            results_all['metrics'] = np.array([eval_res['mae'], eval_res['mse']])
 
-            for np_data in ['metrics', 'inputs', 'trues', 'preds']:
-                np.save(osp.join(folder_path, np_data + '.npy'), results_all[np_data])
+            if self.trainer.is_global_zero:
+                print_log(eval_log)
+                folder_path = check_dir(osp.join(self.hparams.save_dir, 'saved'))
+
+                for np_data in ['metrics', 'inputs', 'trues', 'preds']:
+                    np.save(osp.join(folder_path, np_data + '.npy'), results_all[np_data])
+
         return results_all
