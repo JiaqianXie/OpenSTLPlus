@@ -95,6 +95,15 @@ bash tools/prepare_data/download_mmnist.sh
 python tools/train.py -d mmnist --lr 1e-3 -c configs/mmnist/simvp/SimVP_gSTA.py --ex_name mmnist_simvp_gsta
 ```
 
+## Memory-efficient Model Test
+The test phase takes up a large amount of RAM memory. To run the model test on lower RAM machine, you can run the following test script
+```shell
+bash tools/mem-efficient-test.sh $dataset_name $config_path $ex_name
+```
+For example:
+```shell
+bash tools/mem-efficient-test.sh kitticaltech configs/kitticaltech/simvp/SimVP_IncepU.py kitti_simvp_incepu
+```
 ## Tutorial on using Custom Data
 
 For the convenience of users, we provide a tutorial on how to train, evaluate, and visualize with OpenSTL on custom data. This tutorial enables users to quickly build their own projects using OpenSTL. For more details, please refer to the [`tutorial.ipynb`](examples/tutorial.ipynb) in the `examples/` directory.
