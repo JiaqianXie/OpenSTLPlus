@@ -18,6 +18,7 @@ def create_parser():
     parser.add_argument('config_file', type=str, help='Path to the config file')
     parser.add_argument('ex_name', type=str, help="Experiment name")
 
+    parser.add_argument('--project_name', type=str, default="video-prediction", help="WandB project name")
     parser.add_argument('--device', default='cuda', type=str,
                         help='Name of device to use for tensor computations (cuda/cpu)')
     parser.add_argument('--dist', action='store_true', default=False,

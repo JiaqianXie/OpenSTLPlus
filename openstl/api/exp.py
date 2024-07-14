@@ -61,7 +61,7 @@ class BaseExperiment(object):
                            enable_progress_bar=True,
                            )
         else:
-            wandb_logger = WandbLogger(log_model="all", name=args.ex_name, project="video-prediction")
+            wandb_logger = WandbLogger(log_model=False, name=args.ex_name, project=args.project_name)
             # wandb_logger.experiment.config.update(vars(args))
             return Trainer(devices=args.gpus,  # Use these GPUs
                            max_epochs=args.epoch,  # Maximum number of epochs to train for
