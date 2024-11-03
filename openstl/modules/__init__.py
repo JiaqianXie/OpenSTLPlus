@@ -11,7 +11,7 @@ from .predrnnv2_modules import SpatioTemporalLSTMCellv2
 from .simvp_modules import (BasicConv2d, ConvSC, GroupConv2d,
                             ConvNeXtSubBlock, ConvMixerSubBlock, GASubBlock, gInception_ST,
                             HorNetSubBlock, MLPMixerSubBlock, MogaSubBlock, PoolFormerSubBlock,
-                            SwinSubBlock, UniformerSubBlock, VANSubBlock, ViTSubBlock, TAUSubBlock)
+                            SwinSubBlock, UniformerSubBlock, VANSubBlock, ViTSubBlock, TAUSubBlock, MambaBlock)
 from .mmvp_modules import (ResBlock, RRDB, ResidualDenseBlock_4C, Up, Conv3D, ConvLayer,
                            MatrixPredictor3DConv, SimpleMatrixPredictor3DConv_direct, PredictModel) 
 from .swinlstm_modules import UpSample, DownSample, STconvert
@@ -23,7 +23,7 @@ __all__ = [
     'BasicConv2d', 'ConvSC', 'GroupConv2d',
     'ConvNeXtSubBlock', 'ConvMixerSubBlock', 'GASubBlock', 'gInception_ST',
     'HorNetSubBlock', 'MLPMixerSubBlock', 'MogaSubBlock', 'PoolFormerSubBlock',
-    'SwinSubBlock', 'UniformerSubBlock', 'VANSubBlock', 'ViTSubBlock', 'TAUSubBlock',
+    'SwinSubBlock', 'UniformerSubBlock', 'VANSubBlock', 'ViTSubBlock', 'TAUSubBlock', 'MambaBlock',
     'ResBlock', 'RRDB', 'ResidualDenseBlock_4C', 'Up', 'Conv3D', 'ConvLayer',
     'MatrixPredictor3DConv', 'SimpleMatrixPredictor3DConv_direct', 'PredictModel',
     'UpSample', 'DownSample', 'STconvert' 

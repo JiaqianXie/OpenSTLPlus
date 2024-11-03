@@ -2,14 +2,14 @@ import torch
 from torch import nn
 
 from ..modules import (ConvSC, ConvNeXtSubBlock, ConvMixerSubBlock, GASubBlock, gInception_ST,
-                       HorNetSubBlock, MLPMixerSubBlock, MogaSubBlock, PoolFormerSubBlock,
-                       SwinSubBlock, UniformerSubBlock, VANSubBlock, ViTSubBlock, TAUSubBlock, MambaBlock)
+                             HorNetSubBlock, MLPMixerSubBlock, MogaSubBlock, PoolFormerSubBlock,
+                             SwinSubBlock, UniformerSubBlock, VANSubBlock, ViTSubBlock, TAUSubBlock)
 
 from ..modules.layers import MixMlp
 from ..modules.simvp_modules import SpatialAttention
 
 class SimVP_Model(nn.Module):
-    r"""SimVP Model
+    r"""SimMambaVP Model
 
     Implementation of `SimVP: Simpler yet Better Video Prediction
     <https://arxiv.org/abs/2206.05099>`_.
@@ -229,8 +229,7 @@ class MetaBlock(nn.Module):
                 drop=drop, drop_path=drop_path, act_layer=nn.GELU)
         elif model_type == 'mamba':
             self.block = MambaBlock(
-                dim=in_channels,
-                depth=4
+
             )
         else:
             assert False and "Invalid model_type in SimVP"
