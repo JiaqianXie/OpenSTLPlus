@@ -805,6 +805,7 @@ class MambaBlock(nn.Module):
         super().__init__()
         self.residual_in_fp32 = residual_in_fp32
         self.fused_add_norm = fused_add_norm
+        self.dim = dim
         self.drop_path = DropPath(drop_path_rate) if drop_path_rate > 0. else nn.Identity()
         self.return_index = []
         for i in range(clip_return_layer):
@@ -860,29 +861,9 @@ class MambaBlock(nn.Module):
             if (idx - 1) in self.return_index:
                 x_clip_vis.append(self.norm(residual.to(dtype=self.norm.weight.dtype)))  # share norm for mask
 
-        if not self.fused_add_norm:
-            if residual is None:
-                residual = hidden_states
-            else:
-                residual = residual + self.drop_path(hidden_states)
-            hidden_states = self.norm(residual.to(dtype=self.norm.weight.dtype))
-        else:
-            # Set prenorm=False here since we don't need the residual
-            # fused_add_norm_fn = rms_norm_fn if isinstance(self.norm, RMSNorm) else layer_norm_fn
-            fused_add_norm_fn = rms_norm_ref if isinstance(self.norm, RMSNorm) else layer_norm_fn
-            hidden_states = fused_add_norm_fn(
-                self.drop_path(hidden_states),
-                self.norm.weight,
-                self.norm.bias,
-                eps=self.norm.eps,
-                residual=residual,
-                prenorm=False,
-                # residual_in_fp32=self.residual_in_fp32,
-            )
-
         if (self.depth - 1) in self.return_index:
             x_clip_vis.append(residual)
 
-        x = x_clip_vis[0].reshape(B, H, W, C)
+        x = self.norm(hidden_states.to(dtype=self.norm.weight.dtype)).reshape(B, H, W, C)
 
         return x.permute(0, 3, 1, 2)

@@ -5,7 +5,7 @@ spatio_kernel_dec = 3
 model_type = 'mamba'
 hid_S = 64
 hid_T = 512
-N_T = 1
+N_T = 2
 N_S = 4
 depth = 4
 # training
