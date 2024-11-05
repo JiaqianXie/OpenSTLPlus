@@ -181,6 +181,7 @@ class MetaBlock(nn.Module):
 
     def __init__(self, in_channels, out_channels, input_resolution=None, model_type=None,
                  mlp_ratio=8., drop=0.0, drop_path=0.0, layer_i=0, weight_sharing=False, weight_sharing_params=None,
+                 depth=4
                  ):
         super(MetaBlock, self).__init__()
         self.in_channels = in_channels
