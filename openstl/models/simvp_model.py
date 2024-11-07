@@ -18,7 +18,7 @@ class SimVP_Model(nn.Module):
 
     def __init__(self, in_shape, hid_S=16, hid_T=256, N_S=4, N_T=4, model_type='gSTA',
                  mlp_ratio=8., drop=0.0, drop_path=0.0, spatio_kernel_enc=3,
-                 spatio_kernel_dec=3, act_inplace=False, **kwargs):
+                 spatio_kernel_dec=3, act_inplace=False, depth=4, **kwargs):
         super(SimVP_Model, self).__init__()
         T, C, H, W = in_shape  # T is pre_seq_length
         H, W = int(H / 2**(N_S/2)), int(W / 2**(N_S/2))  # downsample 1 / 2**(N_S/2)
@@ -35,9 +35,12 @@ class SimVP_Model(nn.Module):
               input_resolution=(H, W), model_type=model_type,
               mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path, weight_sharing=True)
         else:
-            self.hid = MidMetaNet(T*hid_S, hid_T, N_T,
-                input_resolution=(H, W), model_type=model_type,
-                mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path)
+            if N_T == 0:
+                self.hid = nn.Identity()
+            else:
+                self.hid = MidMetaNet(T*hid_S, hid_T, N_T,
+                    input_resolution=(H, W), model_type=model_type,
+                    mlp_ratio=mlp_ratio, drop=drop, drop_path=drop_path, depth=depth)
 
     def forward(self, x_raw, **kwargs):
         B, T, C, H, W = x_raw.shape
@@ -231,7 +234,7 @@ class MetaBlock(nn.Module):
         elif model_type == 'mamba':
             self.block = MambaBlock(
                 dim=in_channels,
-                depth=4
+                depth=depth
             )
         else:
             assert False and "Invalid model_type in SimVP"
@@ -258,7 +261,7 @@ class MidMetaNet(nn.Module):
 
     def __init__(self, channel_in, channel_hid, N2,
                  input_resolution=None, model_type=None,
-                 mlp_ratio=4., drop=0.0, drop_path=0.1, weight_sharing=False):
+                 mlp_ratio=4., drop=0.0, drop_path=0.1, weight_sharing=False, depth=4):
         super(MidMetaNet, self).__init__()
         assert N2 >= 2 and mlp_ratio > 1
         self.N2 = N2
@@ -281,17 +284,17 @@ class MidMetaNet(nn.Module):
         # downsample
         enc_layers = [MetaBlock(
             channel_in, channel_hid, input_resolution, model_type,
-            mlp_ratio, drop, drop_path=dpr[0], layer_i=0)]
+            mlp_ratio, drop, drop_path=dpr[0], layer_i=0, depth=depth)]
         # middle layers
         for i in range(1, N2-1):
             enc_layers.append(MetaBlock(
                 channel_hid, channel_hid, input_resolution, model_type,
                 mlp_ratio, drop, drop_path=dpr[i], layer_i=i, weight_sharing=weight_sharing,
-                weight_sharing_params=weight_sharing_params))
+                weight_sharing_params=weight_sharing_params, depth=depth))
         # upsample
         enc_layers.append(MetaBlock(
             channel_hid, channel_in, input_resolution, model_type,
-            mlp_ratio, drop, drop_path=drop_path, layer_i=N2-1))
+            mlp_ratio, drop, drop_path=drop_path, layer_i=N2-1, depth=depth))
         self.enc = nn.Sequential(*enc_layers)
 
     def forward(self, x):
