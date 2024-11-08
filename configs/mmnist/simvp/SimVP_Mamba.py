@@ -6,7 +6,7 @@ model_type = 'mamba'
 hid_S = 64
 hid_T = 512
 N_T = 2
-depth = 24
+depth = 8
 N_S = 4
 # training
 lr = 5e-4
