@@ -864,6 +864,7 @@ class MambaBlock(nn.Module):
         if (self.depth - 1) in self.return_index:
             x_clip_vis.append(residual)
 
-        x = self.norm(hidden_states.to(dtype=self.norm.weight.dtype)).reshape(B, H, W, C)
+        # x = self.norm(hidden_states.to(dtype=self.norm.weight.dtype)).reshape(B, H, W, C)
 
+        x = hidden_states.to(dtype=self.norm.weight.dtype).reshape(B, H, W, C)
         return x.permute(0, 3, 1, 2)
