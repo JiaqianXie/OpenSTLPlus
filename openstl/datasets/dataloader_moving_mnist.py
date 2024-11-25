@@ -91,6 +91,7 @@ class MovingMNIST(Dataset):
         self.n_frames_total = self.n_frames_input + self.n_frames_output
         self.transform = transform
         self.use_augment = use_augment
+
         self.background = 'cifar' in data_name
         # For generating data
         self.image_size_ = image_size
@@ -179,7 +180,7 @@ class MovingMNIST(Dataset):
             data = data[..., np.newaxis]
         return data
 
-    def _augment_seq(self, imgs, crop_scale=0.94):
+    def _augment_seq(self, imgs, crop_scale=0.94, p_mask=0.5):
         """Augmentations for video"""
         _, _, h, w = imgs.shape  # original shape, e.g., [10, 1, 64, 64]
         imgs = F.interpolate(imgs, scale_factor=1 / crop_scale, mode='bilinear')
@@ -195,6 +196,21 @@ class MovingMNIST(Dataset):
             imgs = torch.flip(imgs, dims=(2, ))  # vertical flip
         elif random.randint(-2, 1):
             imgs = torch.flip(imgs, dims=(3, ))  # horizontal flip
+
+        # Random Masking
+        if random.random() < p_mask:
+            # Decide the number of masks to apply
+            num_masks = random.randint(1, 10)
+            for _ in range(num_masks):
+                # Define mask size
+                mask_h = np.random.randint(h // 20, h // 10)
+                mask_w = np.random.randint(w // 20, w // 10)
+                # Random position for the mask
+                top = np.random.randint(0, h - mask_h)
+                left = np.random.randint(0, w - mask_w)
+                # Apply the mask (set pixels to zero)
+                imgs[:, :, top:top + mask_h, left:left + mask_w] = 0
+
         return imgs
 
     def __getitem__(self, idx):
@@ -236,7 +252,7 @@ class MovingMNIST(Dataset):
 
 def load_data(batch_size, val_batch_size, data_root, num_workers=4, data_name='mnist',
               pre_seq_length=10, aft_seq_length=10, in_shape=[10, 1, 64, 64],
-              distributed=False, use_augment=False, use_prefetcher=False, drop_last=False):
+              distributed=False, use_augment=False, use_mask=False, use_prefetcher=False, drop_last=False):
 
     image_size = in_shape[-1] if in_shape is not None else 64
     train_set = MovingMNIST(root=data_root, is_train=True, data_name=data_name,

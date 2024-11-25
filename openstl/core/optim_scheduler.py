@@ -149,6 +149,13 @@ def get_optim_scheduler(args, epoch, model, steps_per_epoch):
             T_max=epoch,
             eta_min=args.min_lr
         )
+    elif sched_lower == 'cosine_restart':
+        lr_scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            optimizer,
+            T_0=args.T_0,
+            T_mult=args.T_mult,
+            eta_min=args.min_lr
+        )
     elif sched_lower == 'tanh':
         lr_scheduler = TanhLRScheduler(
             optimizer,

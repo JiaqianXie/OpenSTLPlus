@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 from setuptools import find_packages, setup
 
-
-def readme():
-    with open('README.md', encoding='utf-8') as f:
-        content = f.read()
-    return content
-
-
 def get_version():
     version_file = 'openstl/version.py'
     with open(version_file, 'r', encoding='utf-8') as f:
@@ -98,14 +91,12 @@ if __name__ == '__main__':
     setup(
         name='OpenSTLPlus',
         version=get_version(),
-        description='OpenSTL: Open-source Toolbox for SpatioTemporal Predictive Learning Modified Version',
-        long_description=readme(),
-        long_description_content_type='text/markdown',
-        author='CAIRI Westlake University Contributors',
-        author_email='lisiyuan@westlake.edu.com',
+        description='OpenSTLPlus: A Modified Version of Open-source Toolbox for SpatioTemporal Predictive Learning',
+        author='Vivian Xie',
+        author_email='vivian@fuji.waseda.jp',
         keywords='spatiotemporal predictive learning, video prediction, '
         'unsupervised spatiotemporal learning',
-        url='https://github.com/chengtan9907/OpenSTL',
+        url='https://github.com/JiaqianXie/OpenSTLPlus',
         packages=find_packages(exclude=('configs', 'tools', 'demo')),
         classifiers=[
             'Development Status :: 4 - Beta',
