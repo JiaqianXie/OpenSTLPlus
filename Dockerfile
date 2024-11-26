@@ -2,8 +2,8 @@ FROM nvcr.io/nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
-#RUN ln -s /usr/local/cuda/lib64/libcublas.so.11 /usr/local/cuda/lib64/libcublas.so
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+ENV WANDB_API_KEY=b118bf8a81ef06fe0c1e2a6324fb81a510fc608c
 
 COPY ./openstl/ /app/openstl
 COPY ./setup.py /app/setup.py
@@ -29,7 +29,4 @@ RUN pip3 install timm==0.6.11
 RUN pip3 install scikit-image hickle decord fvcore lpips nni einops pandas tqdm wandb dill optuna
 RUN pip3 install -e .
 
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
-ENV WANDB_API_KEY=b118bf8a81ef06fe0c1e2a6324fb81a510fc608c
-
-ENTRYPOINT ["python3", "tools/train.py", "mmnist", "configs/mmnist/simvp/SimVP_Mamba.py", "mmnist_SimVP_Mamba_nt4_depth8_mask"]
+ENTRYPOINT ["tail", "-f", "/dev/null"]

@@ -234,7 +234,7 @@ class MetaBlock(nn.Module):
         elif model_type == 'mamba':
             self.block = MambaBlock(
                 dim=in_channels,
-                d_intermediate=128,
+                d_intermediate=256,
                 num_module_layers=num_module_layers
             )
         else:

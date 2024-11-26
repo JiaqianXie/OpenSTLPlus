@@ -5,8 +5,8 @@ spatio_kernel_dec = 3
 model_type = 'mamba'
 hid_S = 64
 hid_T = 512
-N_T = 4
-depth = 4
+N_T = 2
+num_module_layers = 8
 N_S = 4
 # training
 lr = 5e-4
