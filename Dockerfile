@@ -29,4 +29,7 @@ RUN pip3 install timm==0.6.11
 RUN pip3 install scikit-image hickle decord fvcore lpips nni einops pandas tqdm wandb dill optuna
 RUN pip3 install -e .
 
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
+ENV WANDB_API_KEY=b118bf8a81ef06fe0c1e2a6324fb81a510fc608c
+
+ENTRYPOINT ["python3", "tools/train.py", "mmnist", "configs/mmnist/simvp/SimVP_Mamba.py", "mmnist_SimVP_Mamba_nt4_depth8_mask"]

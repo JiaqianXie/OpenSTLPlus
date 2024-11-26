@@ -19,3 +19,10 @@ opt = 'adamp'
 weight_decay = 1e-4
 epoch = 200
 use_augment=True
+augment_params={
+    "use_mask": True,
+    "use_flip": False,
+    "mask_prob": 0.5,
+    "max_mask_ratio": 0.05,
+    "max_num_masks": 3
+}

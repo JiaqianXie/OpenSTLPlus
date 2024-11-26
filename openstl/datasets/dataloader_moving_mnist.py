@@ -64,16 +64,19 @@ class MovingMNIST(Dataset):
         image_size (int): Input resolution of the data.
         num_objects (list): The number of moving objects in videos.
         use_augment (bool): Whether to use augmentations (defaults to False).
+        use_flip (bool): Whether to use random flip augmentations (defaults to False).
+        use_mask (bool): Whether to use random masking augmentations (defaults to False).
     """
 
     def __init__(self, root, is_train=True, data_name='mnist',
                  n_frames_input=10, n_frames_output=10, image_size=64,
-                 num_objects=[2], transform=None, use_augment=False):
+                 num_objects=[2], transform=None, use_augment=False, augment_params=None):
         super(MovingMNIST, self).__init__()
 
         self.dataset = None
         self.is_train = is_train
         self.data_name = data_name
+        self.augment_params = augment_params
         if self.is_train:
             self.mnist = load_mnist(root, data_name)
             self.cifar = load_cifar(root, data_name)
@@ -180,7 +183,7 @@ class MovingMNIST(Dataset):
             data = data[..., np.newaxis]
         return data
 
-    def _augment_seq(self, imgs, crop_scale=0.94, p_mask=0.5):
+    def _augment_seq(self, imgs, crop_scale=0.94, augment_params=None):
         """Augmentations for video"""
         _, _, h, w = imgs.shape  # original shape, e.g., [10, 1, 64, 64]
         imgs = F.interpolate(imgs, scale_factor=1 / crop_scale, mode='bilinear')
@@ -190,26 +193,31 @@ class MovingMNIST(Dataset):
         y = np.random.randint(0, iw - w + 1)
         imgs = imgs[:, :, x:x+h, y:y+w]
         # Random Flip
-        if random.randint(-2, 1):
-            imgs = torch.flip(imgs, dims=(2,3))  # rotation 180
-        elif random.randint(-2, 1):
-            imgs = torch.flip(imgs, dims=(2, ))  # vertical flip
-        elif random.randint(-2, 1):
-            imgs = torch.flip(imgs, dims=(3, ))  # horizontal flip
+        if "use_flip" in augment_params and augment_params["use_flip"]:
+            if random.randint(-2, 1):
+                imgs = torch.flip(imgs, dims=(2,3))  # rotation 180
+            elif random.randint(-2, 1):
+                imgs = torch.flip(imgs, dims=(2, ))  # vertical flip
+            elif random.randint(-2, 1):
+                imgs = torch.flip(imgs, dims=(3, ))  # horizontal flip
 
         # Random Masking
-        if random.random() < p_mask:
-            # Decide the number of masks to apply
-            num_masks = random.randint(1, 10)
-            for _ in range(num_masks):
-                # Define mask size
-                mask_h = np.random.randint(h // 20, h // 10)
-                mask_w = np.random.randint(w // 20, w // 10)
-                # Random position for the mask
-                top = np.random.randint(0, h - mask_h)
-                left = np.random.randint(0, w - mask_w)
-                # Apply the mask (set pixels to zero)
-                imgs[:, :, top:top + mask_h, left:left + mask_w] = 0
+        if "use_mask" in augment_params and augment_params["use_mask"]:
+            max_mask_ratio = augment_params.get('max_mask_ratio', 0.1)
+            mask_prob = augment_params.get('mask_prob', 0.5)
+            max_num_masks = augment_params.get('max_num_masks', 3)
+            if random.random() < mask_prob:
+                # Decide the number of masks to apply
+                num_masks = random.randint(1, max_num_masks)
+                for _ in range(num_masks):
+                    # Define mask size
+                    mask_h = np.random.randint(int(h * max_mask_ratio * 0.5), int(h * max_mask_ratio))
+                    mask_w = np.random.randint(int(w * max_mask_ratio * 0.5), int(w * max_mask_ratio))
+                    # Random position for the mask
+                    top = np.random.randint(0, h - mask_h)
+                    left = np.random.randint(0, w - mask_w)
+                    # Apply the mask (set pixels to zero)
+                    imgs[:, :, top:top + mask_h, left:left + mask_w] = 0
 
         return imgs
 
@@ -240,7 +248,7 @@ class MovingMNIST(Dataset):
         input = torch.from_numpy(input / 255.0).contiguous().float()
 
         if self.use_augment:
-            imgs = self._augment_seq(torch.cat([input, output], dim=0), crop_scale=0.94)
+            imgs = self._augment_seq(torch.cat([input, output], dim=0), crop_scale=0.94, augment_params=self.augment_params)
             input = imgs[:self.n_frames_input, ...]
             output = imgs[self.n_frames_input:self.n_frames_input+self.n_frames_output, ...]
 
@@ -252,13 +260,13 @@ class MovingMNIST(Dataset):
 
 def load_data(batch_size, val_batch_size, data_root, num_workers=4, data_name='mnist',
               pre_seq_length=10, aft_seq_length=10, in_shape=[10, 1, 64, 64],
-              distributed=False, use_augment=False, use_mask=False, use_prefetcher=False, drop_last=False):
+              distributed=False, use_augment=False, use_mask=False, use_prefetcher=False, drop_last=False,augment_params=None):
 
     image_size = in_shape[-1] if in_shape is not None else 64
     train_set = MovingMNIST(root=data_root, is_train=True, data_name=data_name,
                             n_frames_input=pre_seq_length,
                             n_frames_output=aft_seq_length, num_objects=[2],
-                            image_size=image_size, use_augment=use_augment)
+                            image_size=image_size, use_augment=use_augment, augment_params=augment_params)
     test_set = MovingMNIST(root=data_root, is_train=False, data_name=data_name,
                            n_frames_input=pre_seq_length,
                            n_frames_output=aft_seq_length, num_objects=[2],
