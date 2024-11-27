@@ -248,8 +248,10 @@ class MovingMNIST(Dataset):
         input = torch.from_numpy(input / 255.0).contiguous().float()
 
         if self.use_augment:
-            imgs = self._augment_seq(torch.cat([input, output], dim=0), crop_scale=0.94, augment_params=self.augment_params)
+            # imgs = self._augment_seq(torch.cat([input, output], dim=0), crop_scale=0.94, augment_params=self.augment_params)
+            imgs = torch.cat([input, output], dim=0)
             input = imgs[:self.n_frames_input, ...]
+            input = self._augment_seq(input, crop_scale=0.94, augment_params=self.augment_params)
             output = imgs[self.n_frames_input:self.n_frames_input+self.n_frames_output, ...]
 
         return input, output

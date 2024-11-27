@@ -29,4 +29,4 @@ RUN pip3 install timm==0.6.11
 RUN pip3 install scikit-image hickle decord fvcore lpips nni einops pandas tqdm wandb dill optuna
 RUN pip3 install -e .
 
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+#ENTRYPOINT ["tail", "-f", "/dev/null"]

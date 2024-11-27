@@ -18,7 +18,7 @@ T_mult = 1
 opt = 'adamp'
 weight_decay = 1e-4
 epoch = 200
-use_augment=True
+use_augment=False
 augment_params={
     "use_mask": True,
     "use_flip": False,
@@ -26,3 +26,5 @@ augment_params={
     "max_mask_ratio": 0.05,
     "max_num_masks": 3
 }
+clip_grad=0.2
+clip_mode="value"
