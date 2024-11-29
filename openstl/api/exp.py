@@ -25,8 +25,6 @@ class BaseExperiment(object):
         """Initialize experiments (non-dist as an example)"""
         self.args = args
         self.config = self.args.__dict__
-        print("config")
-        print(self.config)
         self.method = None
         self.args.method = self.args.method.lower()
         self._dist = self.args.dist

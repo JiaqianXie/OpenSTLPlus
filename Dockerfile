@@ -30,3 +30,4 @@ RUN pip3 install scikit-image hickle decord fvcore lpips nni einops pandas tqdm 
 RUN pip3 install -e .
 
 #ENTRYPOINT ["tail", "-f", "/dev/null"]
+# test command docker run -d --rm --gpus '"device=1"' -v ./work_dirs:/app/work_dirs -v ./data:/app/data -v ./configs:/app/configs -v ./openstl:/app/openstl --name openstlplus --shm-size=50gb openstlplus python3 tools/train.py mmnist configs/mmnist/simvp/SimVP_Mamba.py mmnist_SimVP_Mamba_nt2_layer8_grad_clip
