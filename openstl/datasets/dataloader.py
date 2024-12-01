@@ -10,7 +10,11 @@ def load_data(dataname, batch_size, val_batch_size, num_workers, data_root, dist
         augment_params=kwargs.get('augment_params', {}),
         use_prefetcher=kwargs.get('use_prefetcher', False),
         drop_last=kwargs.get('drop_last', False),
+        visualize_data=kwargs.get('visualize_data', False),
+        vis_dir=kwargs.get('vis_dir', None),
     )
+
+    print("data cfg", cfg_dataloader)
 
     if dataname == 'bair':
         from .dataloader_bair import load_data

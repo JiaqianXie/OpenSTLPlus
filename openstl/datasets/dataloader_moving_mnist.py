@@ -186,7 +186,7 @@ class MovingMNIST(Dataset):
     def _augment_seq(self, imgs, crop_scale=0.94, augment_params=None):
         """Augmentations for video"""
         _, _, h, w = imgs.shape  # original shape, e.g., [10, 1, 64, 64]
-        imgs = F.interpolate(imgs, scale_factor=1 / crop_scale, mode='bilinear')
+        # imgs = F.interpolate(imgs, scale_factor=1 / crop_scale, mode='bilinear')
         _, _, ih, iw = imgs.shape
 
         if "use_crop" in augment_params and augment_params["use_crop"]:
@@ -264,7 +264,8 @@ class MovingMNIST(Dataset):
 
 def load_data(batch_size, val_batch_size, data_root, num_workers=4, data_name='mnist',
               pre_seq_length=10, aft_seq_length=10, in_shape=[10, 1, 64, 64],
-              distributed=False, use_augment=False, use_mask=False, use_prefetcher=False, drop_last=False, augment_params=None):
+              distributed=False, use_augment=False, use_mask=False, use_prefetcher=False, drop_last=False, augment_params=None,
+              visualize_data=False, vis_dir=None):
 
     image_size = in_shape[-1] if in_shape is not None else 64
     train_set = MovingMNIST(root=data_root, is_train=True, data_name=data_name,

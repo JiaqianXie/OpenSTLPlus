@@ -818,8 +818,10 @@ class MambaBlock(nn.Module):
     def __init__(
         self,
         dim: int,
-        num_module_layers: int,
+        N_M: int,
         d_intermediate: int,
+        bidirectional: bool,
+        bidirection_strategy: str,
         ssm_cfg=None,
         attn_layer_idx=None,
         attn_cfg=None,
@@ -833,6 +835,15 @@ class MambaBlock(nn.Module):
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
+
+        if bidirectional and bidirection_strategy is None:
+            bidirection_strategy = "add"  # Default strategy: `add`
+        if bidirectional and bidirection_strategy not in ["add", "multiply"]:
+            raise NotImplementedError(f"`{bidirection_strategy}` strategy for bi-directionality is not implemented!")
+
+        self.bidirectional = bidirectional
+        self.bidirection_strategy = bidirection_strategy
+
         self.residual_in_fp32 = residual_in_fp32
 
         # We change the order of residual and layer norm:
@@ -845,7 +856,7 @@ class MambaBlock(nn.Module):
             if layer_norm_fn is None or rms_norm_fn is None:
                 raise ImportError("Failed to import Triton LayerNorm / RMSNorm kernels")
 
-        self.layers = nn.ModuleList(
+        self.fwd_layers = nn.ModuleList(
             [
                 create_mamba_layer(
                     dim,
@@ -860,7 +871,27 @@ class MambaBlock(nn.Module):
                     layer_idx=i,
                     **factory_kwargs,
                 )
-                for i in range(num_module_layers)
+                for i in range(N_M)
+            ]
+        )
+
+        if self.bidirectional:
+            self.bwd_layers = nn.ModuleList(
+            [
+                create_mamba_layer(
+                    dim,
+                    d_intermediate=d_intermediate,
+                    ssm_cfg=ssm_cfg,
+                    attn_layer_idx=attn_layer_idx,
+                    attn_cfg=attn_cfg,
+                    norm_epsilon=norm_epsilon,
+                    rms_norm=rms_norm,
+                    residual_in_fp32=residual_in_fp32,
+                    fused_add_norm=fused_add_norm,
+                    layer_idx=i,
+                    **factory_kwargs,
+                )
+                for i in range(N_M)
             ]
         )
 
@@ -871,7 +902,7 @@ class MambaBlock(nn.Module):
         self.apply(
             partial(
                 init_mamba_weights,
-                n_layer=num_module_layers,
+                n_layer=N_M,
                 **(initializer_cfg if initializer_cfg is not None else {}),
                 n_residuals_per_layer=1 if d_intermediate == 0 else 2,  # 2 if we have MLP
             )
@@ -885,12 +916,32 @@ class MambaBlock(nn.Module):
 
     def forward(self, x):
         B, C, H, W = x.shape
-        hidden_states = x.reshape(B, C, H * W).permute(0, 2, 1)
-        residual = None
-        for layer in self.layers:
-            hidden_states, residual = layer(
-                hidden_states, residual
+        data_input = x.reshape(B, C, H * W).permute(0, 2, 1)
+        fwd_residual = None
+        fwd_hidden_states = data_input
+        for layer in self.fwd_layers:
+            fwd_hidden_states, fwd_residual = layer(
+                fwd_hidden_states, fwd_residual
             )
+
+        if self.bidirectional:
+            bwd_residual = None
+            bwd_hidden_states = data_input.flip(dims=(1,))
+            for layer in self.fwd_layers:
+                bwd_hidden_states, bwd_residual = layer(
+                    bwd_hidden_states, bwd_residual
+                )
+            bwd_hidden_states = bwd_hidden_states.flip(dims=(1,))
+            if self.bidirection_strategy == "add":
+                hidden_states = fwd_hidden_states + bwd_hidden_states
+                residual = fwd_residual + bwd_residual
+            elif self.bidirection_strategy == "multiply":
+                hidden_states = fwd_hidden_states * bwd_hidden_states
+                residual = fwd_residual * bwd_residual
+        else:
+            hidden_states = fwd_hidden_states
+            residual = fwd_residual
+
         if not self.fused_add_norm:
             residual = (hidden_states + residual) if residual is not None else hidden_states
             hidden_states = self.norm_f(residual.to(dtype=self.norm_f.weight.dtype))

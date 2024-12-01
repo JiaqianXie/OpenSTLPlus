@@ -6,7 +6,7 @@ model_type = 'mamba'
 hid_S = 64
 hid_T = 256
 N_T = 4
-num_module_layers = 8
+N_M = 8
 N_S = 4
 # training
 lr = 5e-4
@@ -29,3 +29,5 @@ augment_params={
 }
 clip_grad=0.2
 clip_mode="value"
+visualize_data=True
+vis_dir = "work_dirs/vis/kitti_mask"

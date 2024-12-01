@@ -3,10 +3,11 @@ method = 'SimVP'
 spatio_kernel_enc = 3
 spatio_kernel_dec = 3
 model_type = 'mamba'
+bimamba=True
 hid_S = 64
 hid_T = 512
 N_T = 2
-num_module_layers = 8
+N_M = 8
 N_S = 4
 # training
 lr = 5e-4
@@ -29,3 +30,4 @@ augment_params={
 }
 clip_grad=0.2
 clip_mode="value"
+visualize_data=False

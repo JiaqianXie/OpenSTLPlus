@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 
 from openstl.datasets.utils import create_loader
+import shutil
 
 try:
     import hickle as hkl
@@ -22,9 +23,12 @@ class KittiCaltechDataset(Dataset):
     """KittiCaltech <https://dl.acm.org/doi/10.1177/0278364913491297>`_ Dataset"""
 
     def __init__(self, datas, indices, pre_seq_length, aft_seq_length,
-                 require_back=False, use_augment=False, data_name='kitticaltech', augment_params=None, visualize=False, save_dir=None):
+                 require_back=False, use_augment=False, data_name='kitticaltech', augment_params=None,
+                 visualize_data=False, vis_dir=None):
         super(KittiCaltechDataset, self).__init__()
         self.datas = datas.swapaxes(2, 3).swapaxes(1, 2)
+        self.visualize_data = visualize_data
+        self.vis_dir = vis_dir
         self.indices = indices
         self.pre_seq_length = pre_seq_length
         self.aft_seq_length = aft_seq_length
@@ -34,7 +38,13 @@ class KittiCaltechDataset(Dataset):
         self.std = 1
         self.data_name = data_name
         self.augment_params = augment_params
-        print(self.augment_params)
+
+        if visualize_data:
+            if os.path.exists(vis_dir):
+                shutil.rmtree(vis_dir)
+            os.makedirs(vis_dir)
+            os.makedirs(os.path.join(vis_dir, 'input'), exist_ok=True)
+            os.makedirs(os.path.join(vis_dir, 'gt'), exist_ok=True)
 
     def _augment_seq(self, imgs, crop_scale=0.95, augment_params=None):
         """Augmentations for video"""
@@ -84,13 +94,13 @@ class KittiCaltechDataset(Dataset):
             imgs = torch.cat([data, labels], dim=0)
             data = imgs[:self.pre_seq_length, ...]
             data = self._augment_seq(data, crop_scale=0.94, augment_params=self.augment_params)
-            self.visualize_data(data, i)
             labels = imgs[self.pre_seq_length:self.pre_seq_length+self.aft_seq_length, ...]
+            if self.visualize_data:
+                self.visualize(data, i, "input")
+                self.visualize(labels, i, "gt")
         return data, labels
 
-    def visualize_data(self, data, i):
-        print("data shape")
-        print(data.shape)
+    def visualize(self, data, i, folder):
         """
         Visualizes the input image (i.e., the variable "data" in __getitem__ function).
 
@@ -103,7 +113,7 @@ class KittiCaltechDataset(Dataset):
             plt.imshow(img.astype(np.uint8))
             plt.title(f"Frame {t + 1}")
             plt.axis('off')
-            save_path = os.path.join("/app/work_dirs/vis", f"video{i}_frame_t{t + 1}.png")
+            save_path = os.path.join(self.vis_dir, folder, f"video{i}_frame_t{t + 1}.png")
             plt.savefig(save_path)
             plt.close()
 
@@ -155,7 +165,7 @@ class DataProcess(object):
                 data = np.load(caltech_cache).astype('float') / 255.0
                 indices = np.load(osp.join(caltech_root, 'indices_cache.npy'))
             else:
-                print(f'loading caltech from {caltech_root}, which requires some times...')
+                print(f'loading KittiCaltech from {caltech_root}, which requires some times...')
                 data = []
                 fileidx = []
                 for seq_id in os.listdir(caltech_root):
@@ -196,8 +206,9 @@ class DataProcess(object):
 
 def load_data(batch_size, val_batch_size, data_root, num_workers=4,
               pre_seq_length=10, aft_seq_length=1, in_shape=[10, 3, 128, 160],
-              distributed=False, use_augment=False, use_prefetcher=False, drop_last=False, augment_params=None):
-
+              distributed=False, use_augment=False, use_prefetcher=False, drop_last=False, augment_params=None,
+              visualize_data=False, vis_dir=None):
+    print(vis_dir)
     if os.path.exists(osp.join(data_root, 'kitti_hkl')):
         input_param = {
             'paths': {'kitti': osp.join(data_root, 'kitti_hkl'),
@@ -218,7 +229,8 @@ def load_data(batch_size, val_batch_size, data_root, num_workers=4,
         assert False and "Invalid data_root for kitticaltech dataset"
 
     train_set = KittiCaltechDataset(
-        train_data, train_idx, pre_seq_length, aft_seq_length, use_augment=use_augment, augment_params=augment_params)
+        train_data, train_idx, pre_seq_length, aft_seq_length, use_augment=use_augment, augment_params=augment_params,
+        visualize_data=visualize_data,vis_dir=vis_dir)
     test_set = KittiCaltechDataset(
         test_data, test_idx, pre_seq_length, aft_seq_length, use_augment=False)
 

@@ -95,6 +95,12 @@ bash tools/prepare_data/download_mmnist.sh
 python tools/train.py -d mmnist --lr 1e-3 -c configs/mmnist/simvp/SimVP_gSTA.py --ex_name mmnist_simvp_gsta
 ```
 
+## Docker Runtime
+
+```shell
+docker run --rm --gpus '"device=1"' -v ./work_dirs:/app/work_dirs -v ./data:/app/data -v ./configs:/app/configs -v ./openstl:/app/openstl --name openstlplus --shm-size=50gb openstlplus python3 tools/train.py kitticaltech configs/kitticaltech/simvp/SimVP_Mamba.py kitti_SimVP_Mamba_nt2_layer8_grad_clip --no_display_method_info
+```
+
 ## Memory-efficient Model Test
 The test phase takes up a large amount of RAM memory. To run the model test on lower RAM machine, you can run the following test script
 ```shell
@@ -221,11 +227,7 @@ We present visualization examples of ConvLSTM below. For more detailed informati
 
 ## License
 
-This project is released under the [Apache 2.0 license](LICENSE). See `LICENSE` for more information.
-
-## Acknowledgement
-
-OpenSTL is an open-source project for STL algorithms created by researchers in **CAIRI AI Lab**. We encourage researchers interested in video and weather prediction to contribute to OpenSTL! We borrow the official implementations of [ConvLSTM](https://arxiv.org/abs/1506.04214), [PredNet](https://arxiv.org/abs/1605.08104), [PredRNN](https://dl.acm.org/doi/abs/10.5555/3294771.3294855) variants, [E3D-LSTM](https://openreview.net/forum?id=B1lKS2AqtX), [MAU](https://arxiv.org/abs/1811.07490), [CrevNet](https://openreview.net/forum?id=B1eY_pVYvB), [PhyDNet](https://arxiv.org/abs/2003.01460), and [DMVFN](https://arxiv.org/abs/2303.09875).
+We developed this project based on OpenSTL, so it is released under the [Apache 2.0 license](LICENSE). See `LICENSE` for more information.
 
 ## Citation
 

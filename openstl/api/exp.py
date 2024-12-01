@@ -29,6 +29,8 @@ class BaseExperiment(object):
         self.args.method = self.args.method.lower()
         self._dist = self.args.dist
 
+        print(self.config)
+
         base_dir = args.res_dir if args.res_dir is not None else 'work_dirs'
         save_dir = osp.join(base_dir, args.ex_name if not args.ex_name.startswith(args.res_dir) \
             else args.ex_name.split(args.res_dir + '/')[-1])
