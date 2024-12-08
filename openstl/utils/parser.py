@@ -5,7 +5,7 @@ import argparse
 
 def create_parser():
     parser = argparse.ArgumentParser(
-        description='OpenSTL train/test a model')
+        description='OpenSTLPlus train/test a model')
     # Set-up parameters
     parser.add_argument('dataname', type=str,
                         choices=['bair', 'mfmnist', 'mmnist', 'mmnist_cifar', 'noisymmnist', 'taxibj', 'human',
@@ -55,6 +55,7 @@ def create_parser():
                         help='Whether to use prefetcher for faster data loading')
     parser.add_argument('--drop_last', action='store_true', default=False,
                         help='Whether to drop the last batch in the val data loading')
+    parser.add_argument('--checkpoint_name', default='best.ckpt', type=str)
 
     # method parameters
     parser.add_argument('--method', '-m', default='SimVP', type=str,

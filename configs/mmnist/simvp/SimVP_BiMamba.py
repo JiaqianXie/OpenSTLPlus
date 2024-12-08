@@ -7,11 +7,11 @@ bimamba = True
 bimamba_strategy = "add"
 hid_S = 64
 hid_T = 256
-N_T = 2
-N_M = 4
+N_T = 4
+N_M = 6
 N_S = 4
 # training
-lr = 1e-3
+lr = 5e-4
 batch_size = 16
 drop_path = 0.1
 sched = 'cosine'
@@ -26,6 +26,6 @@ augment_params={
     "max_mask_ratio": 0.05,
     "max_num_masks": 3
 }
-clip_grad= 0.1
+clip_grad= 0.2
 clip_mode="norm"
 visualize_data=False

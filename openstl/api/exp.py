@@ -124,7 +124,9 @@ class BaseExperiment(object):
 
     def test(self):
         # if self.args.test:
-        ckpt = torch.load(osp.join(self.save_dir, 'checkpoints', 'best.ckpt'))
+        # ckpt = torch.load(osp.join(self.save_dir, 'checkpoints', 'best.ckpt'))
+        print("Loading checkpoint from", str(osp.join(self.save_dir, 'checkpoints', str(self.args.checkpoint_name))))
+        ckpt = torch.load(osp.join(self.save_dir, 'checkpoints', str(self.args.checkpoint_name)))
         self.method.load_state_dict(ckpt['state_dict'])
         self.trainer.test(self.method, self.data)
 

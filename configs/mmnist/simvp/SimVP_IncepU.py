@@ -11,3 +11,4 @@ N_S = 4
 lr = 1e-3
 batch_size = 16
 sched = 'onecycle'
+epoch=500
