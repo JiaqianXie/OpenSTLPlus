@@ -100,7 +100,7 @@ python tools/train.py -d mmnist --lr 1e-3 -c configs/mmnist/simvp/SimVP_gSTA.py 
 ```shell
 docker run --rm --gpus '"device=1"' -v ./work_dirs:/app/work_dirs -v ./data:/app/data -v ./configs:/app/configs -v ./openstl:/app/openstl --name openstlplus --shm-size=50gb openstlplus python3 tools/train.py kitticaltech configs/kitticaltech/simvp/SimVP_Mamba.py kitti_SimVP_Mamba_nt2_layer8_grad_clip --no_display_method_info
 docker run --rm --gpus '"device=0"' -e WANDB_API_KEY=44403bf061ca0ba79e9ee1e3a52cc179eea7218c -v ./work_dirs:/app/work_dirs -v ./data:/app/data -v ./configs:/app/configs -v ./openstl:/app/openstl --name openstlplus --shm-size=50gb openstlplus python3 tools/train.py mmnist configs/mmnist/simvp/SimVP_BiMamba.py mmnist_SimVP_bimamba --no_display_method_info --project_name openstl
-
+docker run --rm --gpus '"device=1"' -e WANDB_API_KEY=44403bf061ca0ba79e9ee1e3a52cc179eea7218c -v ./work_dirs:/app/work_dirs -v ./data:/app/data -v ./configs:/app/configs -v ./openstl:/app/openstl --name openstlplus --shm-size=50gb openstlplus python3 tools/train.py kitticaltech configs/kitticaltech/simvp/SimVP_Mamba.py kitti_SimVP_bimamba --no_display_method_info --project_name openstl
 ```
 
 ## Memory-efficient Model Test

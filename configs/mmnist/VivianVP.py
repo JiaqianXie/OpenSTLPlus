@@ -11,12 +11,11 @@ N_T = 2
 N_M = 8
 N_S = 4
 # training
-lr = 2e-4
-batch_size = 16
-drop_path = 0.2
+lr = 5e-4
+batch_size = 32
+drop_path = 0.0
 sched = 'cosine'
-opt = 'adamp'
-weight_decay = 1e-4
+opt = 'adamw'
 epoch = 500
 use_augment=False
 augment_params={

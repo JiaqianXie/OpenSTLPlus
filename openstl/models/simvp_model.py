@@ -242,7 +242,9 @@ class MetaBlock(nn.Module):
                 d_intermediate=256,
                 N_M=N_M,
                 bidirectional=bimamba,
-                bidirection_strategy=bimamba_strategy
+                bidirection_strategy=bimamba_strategy,
+                drop_path=drop_path,
+                dropout=drop
             )
         else:
             assert False and "Invalid model_type in SimVP"

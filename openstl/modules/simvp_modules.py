@@ -832,6 +832,8 @@ class MambaBlock(nn.Module):
         residual_in_fp32=False,
         device=None,
         dtype=None,
+        drop_path=0.0,
+        dropout=0.0
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
@@ -845,6 +847,8 @@ class MambaBlock(nn.Module):
         self.bidirection_strategy = bidirection_strategy
 
         self.residual_in_fp32 = residual_in_fp32
+        self.dropout = dropout
+        self.drop_path = drop_path
 
         # We change the order of residual and layer norm:
         # Instead of LN -> Attn / MLP -> Add, we do:
@@ -856,6 +860,7 @@ class MambaBlock(nn.Module):
             if layer_norm_fn is None or rms_norm_fn is None:
                 raise ImportError("Failed to import Triton LayerNorm / RMSNorm kernels")
 
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.fwd_layers = nn.ModuleList(
             [
                 create_mamba_layer(
@@ -921,15 +926,15 @@ class MambaBlock(nn.Module):
         fwd_hidden_states = data_input
         for layer in self.fwd_layers:
             fwd_hidden_states, fwd_residual = layer(
-                fwd_hidden_states, fwd_residual
+                self.drop_path(fwd_hidden_states), fwd_residual
             )
 
         if self.bidirectional:
             bwd_residual = None
             bwd_hidden_states = data_input.flip(dims=(1,))
-            for layer in self.fwd_layers:
+            for layer in self.bwd_layers:
                 bwd_hidden_states, bwd_residual = layer(
-                    bwd_hidden_states, bwd_residual
+                    self.drop_path(bwd_hidden_states), bwd_residual
                 )
             bwd_hidden_states = bwd_hidden_states.flip(dims=(1,))
             if self.bidirection_strategy == "add":
@@ -943,12 +948,12 @@ class MambaBlock(nn.Module):
             residual = fwd_residual
 
         if not self.fused_add_norm:
-            residual = (hidden_states + residual) if residual is not None else hidden_states
+            residual = (self.drop_path(hidden_states) + residual) if residual is not None else hidden_states
             hidden_states = self.norm_f(residual.to(dtype=self.norm_f.weight.dtype))
         else:
             # Set prenorm=False here since we don't need the residual
             hidden_states = layer_norm_fn(
-                hidden_states,
+                self.drop_path(hidden_states),
                 self.norm_f.weight,
                 self.norm_f.bias,
                 eps=self.norm_f.eps,
