@@ -932,7 +932,8 @@ class MambaBlock(nn.Module):
         if self.bidirectional:
             bwd_residual = None
             bwd_hidden_states = data_input.flip(dims=(1,))
-            for layer in self.bwd_layers:
+            #TODO change it back
+            for layer in self.fwd_layers:
                 bwd_hidden_states, bwd_residual = layer(
                     self.drop_path(bwd_hidden_states), bwd_residual
                 )
