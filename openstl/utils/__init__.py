@@ -7,7 +7,7 @@ from .parser import create_parser, default_parser
 from .predrnn_utils import (reserve_schedule_sampling_exp, schedule_sampling, reshape_patch,
                         reshape_patch_back)
 from .prednet_utils import get_initial_states
-from .visualization import (show_video_line, show_video_gif_multiple, show_video_gif_single,
+from .visualization import (show_video_line, show_video_gif_multiple, show_video_gif_single, show_video_mp4_multiple,
                         show_heatmap_on_image, show_taxibj, show_weather_bench)
 
 from .callbacks import SetupCallback, EpochEndCallback, BestCheckpointCallback, BatchEndCallback
@@ -21,7 +21,7 @@ __all__ = [
     'get_dist_info',
     'reserve_schedule_sampling_exp', 'schedule_sampling', 'reshape_patch', 'reshape_patch_back',
     'get_initial_states',
-    'show_video_line', 'show_video_gif_multiple', 'show_video_gif_single', 'show_heatmap_on_image',
+    'show_video_line', 'show_video_gif_multiple', 'show_video_gif_single', 'show_video_mp4_multiple', 'show_heatmap_on_image',
     'show_taxibj', 'show_weather_bench',
     'SetupCallback', 'EpochEndCallback', 'BestCheckpointCallback', 'BatchEndCallback',
     'build_similarity_matrix', 'sim_matrix_postprocess', 'sim_matrix_interpolate', 'cum_multiply'    

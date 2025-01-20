@@ -4,7 +4,7 @@ import numpy as np
 
 from openstl.datasets import dataset_parameters
 from openstl.utils import (show_video_gif_multiple, show_video_gif_single, show_video_line,
-                           show_taxibj, show_weather_bench)
+                           show_taxibj, show_weather_bench, show_video_mp4_multiple)
 
 
 def min_max_norm(data):
@@ -20,6 +20,8 @@ def parse_args():
     parser.add_argument('--dataname', '-d', default=None, type=str,
                         help='The name of dataset (default: "mmnist")')
     parser.add_argument('--index', '-i', default=0, type=int, help='The index of a video sequence to show')
+    parser.add_argument('--range', '-r', default=0, type=int,
+                        help='Stack a range of video sequences together, i.e., from i to i+r video sequences')
     parser.add_argument('--work_dirs', '-w', default=None, type=str,
                         help='Path to the work_dir or the path to a set of work_dirs')
     parser.add_argument('--vis_dirs', '-v', action='store_true', default=False,
@@ -89,7 +91,14 @@ def main():
             inputs = show_taxibj(inputs[idx, 0:ncols, ...], cmap='viridis').transpose(0, 3, 1, 2)
             trues = show_taxibj(trues[idx, 0:ncols, ...], cmap='viridis').transpose(0, 3, 1, 2)
         else:
-            inputs, trues = inputs[idx], trues[idx]
+            trues_list = []
+            inputs_list = []
+            for r in range(args.range):
+                inputs_list.append(inputs[idx + r])
+                trues_list.append(trues[idx + r])
+            inputs = np.concatenate(inputs_list, axis=0)
+            trues = np.concatenate(trues_list, axis=0)
+            print(trues.shape)
         if not args.reload_input:  # load the input and true for each method
             break
         else:
@@ -109,27 +118,33 @@ def main():
                                 cmap='viridis', vis_channel=args.vis_channel)
             preds = preds.transpose(0, 3, 1, 2)
         else:
-            preds = predicts_dict[method][idx]
+            preds_list = []
+            for r in range(args.range):
+                preds_list.append(predicts_dict[method][idx + r])
+            preds = np.concatenate(preds_list, axis=0)
 
-        if i == 0:
-            show_video_line(inputs.copy(), ncols=config['pre_seq_length'], vmax=0.6, cbar=False,
-                out_path='{}/{}_input{}'.format(args.save_dirs, args.dataname+c_surfix, str(idx)+'.png'),
-                format='png', use_rgb=use_rgb)
-            show_video_line(trues.copy(), ncols=config['aft_seq_length'], vmax=0.6, cbar=False,
-                out_path='{}/{}_true{}'.format(args.save_dirs, args.dataname+c_surfix, str(idx)+'.png'),
-                format='png', use_rgb=use_rgb)
-            show_video_gif_single(inputs.copy(), use_rgb=use_rgb,
-                out_path='{}/{}_{}_{}_input'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
-            show_video_gif_single(trues.copy(), use_rgb=use_rgb,
-                out_path='{}/{}_{}_{}_true'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
-
-        show_video_line(preds, ncols=ncols, vmax=0.6, cbar=False,
-                        out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, str(idx)+'.png'),
-                        format='png', use_rgb=use_rgb)
-        show_video_gif_multiple(inputs, trues, preds, use_rgb=use_rgb,
+        # if i == 0:
+        #     show_video_line(inputs.copy(), ncols=config['pre_seq_length'], vmax=0.6, cbar=False,
+        #         out_path='{}/{}_input{}'.format(args.save_dirs, args.dataname+c_surfix, str(idx)+'.png'),
+        #         format='png', use_rgb=use_rgb)
+        #     show_video_line(trues.copy(), ncols=config['aft_seq_length'], vmax=0.6, cbar=False,
+        #         out_path='{}/{}_true{}'.format(args.save_dirs, args.dataname+c_surfix, str(idx)+'.png'),
+        #         format='png', use_rgb=use_rgb)
+        #     show_video_gif_single(inputs.copy(), use_rgb=use_rgb,
+        #         out_path='{}/{}_{}_{}_input'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        #     show_video_gif_single(trues.copy(), use_rgb=use_rgb,
+        #         out_path='{}/{}_{}_{}_true'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        #
+        # show_video_line(preds, ncols=ncols, vmax=0.6, cbar=False,
+        #                 out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, str(idx)+'.png'),
+        #                 format='png', use_rgb=use_rgb)
+        # show_video_gif_multiple(inputs, trues, preds, use_rgb=use_rgb,
+        #                         out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        # show_video_gif_single(preds, use_rgb=use_rgb,
+        #                       out_path='{}/{}_{}_{}_pred'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        print("generating mp4")
+        show_video_mp4_multiple(inputs_list, trues_list, preds_list, use_rgb=use_rgb,
                                 out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
-        show_video_gif_single(preds, use_rgb=use_rgb,
-                              out_path='{}/{}_{}_{}_pred'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
 
 
 if __name__ == '__main__':

@@ -22,7 +22,7 @@ base_command="python tools/visualizations/vis_video.py -d kitticaltech"
 for folder in "${folders[@]}"; do
   for index in "${indices[@]}"; do
     work_dir="work_dirs/${folder}"
-    save_dir="vis_dir/${folder}"
+    save_dir="vis_dirs/${folder}"
     command="${base_command} --work_dirs ${work_dir} --save_dirs ${save_dir} --index ${index}"
     echo "Executing: ${command}"
     eval ${command}

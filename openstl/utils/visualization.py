@@ -162,6 +162,99 @@ def show_video_gif_multiple(prev, true, pred, vmax=0.6, vmin=0.0, cmap='gray', n
         images[0].save(out_path, save_all=True, append_images=images[1:], optimize=False, duration=int(1/fps*len(images)), loop=0)
     return images
 
+
+def show_video_mp4_multiple(prev_list, true_list, pred_list,
+                            vmax=0.6, vmin=0.0, cmap='gray', norm=None,
+                            out_path=None, use_rgb=False):
+    """Generate an MP4 video with a video sequence of (prev + true) vs (prev + pred)."""
+
+    # Utility to swap axes if needed (as in your original code).
+    def swap_axes(x):
+        if len(x.shape) > 3:
+            # (batch, height, width, channels) -> (batch, width, height, channels), etc.
+            return x.swapaxes(1, 2).swapaxes(2, 3)
+        else:
+            return x
+
+    video_writer = None  # Will initialize after first frame size is known
+    frames = None
+    for index in range(len(pred_list)):
+        prev = prev_list[index]
+        true = true_list[index]
+        pred = pred_list[index]
+
+        prev, true, pred = map(swap_axes, [prev, true, pred])
+        prev_frames = prev.shape[0]
+        frames = prev_frames + true.shape[0]
+
+        # If an output path is specified, ensure it ends with .mp4
+        if out_path is not None:
+            if not out_path.endswith('.mp4'):
+                out_path = out_path + '.mp4'
+
+        fps = 10  # frames per second for the video
+
+        for i in range(frames):
+            fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9, 6))
+
+            for t, ax in enumerate(axes):
+                if t == 0:
+                    ax.set_title('Ground Truth', fontsize=15, color='green')
+                    # Show either prev or true
+                    if i < prev_frames:
+                        # Show a frame from prev
+                        frame_data = prev[i]
+                    else:
+                        # Show a frame from true
+                        frame_data = true[i - prev_frames]
+                else:
+                    ax.set_title('Predicted Frames', fontsize=15, color='red')
+                    # Show either prev or pred
+                    if i < prev_frames:
+                        frame_data = prev[i]
+                    else:
+                        frame_data = pred[i - prev_frames]
+
+                # If using RGB images, convert from BGR to RGB for proper Matplotlib display
+                if use_rgb:
+                    # Already presumably in BGR, so convert to RGB for imshow
+                    frame_data = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
+                    im = ax.imshow(frame_data)
+                else:
+                    im = ax.imshow(frame_data, cmap=cmap, norm=norm)
+
+                # Set color limits
+                im.set_clim(vmin, vmax)
+                ax.axis('off')
+
+            # Draw the figure so we can grab the pixel buffer
+            fig.canvas.draw()
+
+            # Convert the canvas to an RGB image (height x width x 3)
+            frame = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+            frame = frame.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+            # Initialize the video writer once we know the frame dimensions
+            if video_writer is None and out_path is not None:
+                height, width, _ = frame.shape
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 'avc1', 'mp4v', or 'X264' can work
+                video_writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+
+            # Matplotlib gives us RGB; OpenCV writes in BGR by default
+            frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+            if video_writer is not None:
+                video_writer.write(frame_bgr)
+
+            plt.close(fig)  # Close the figure to avoid memory buildup
+
+    # Release the writer
+    if video_writer is not None:
+        video_writer.release()
+
+    # Optionally return something if needed, e.g. return frames, or None
+    return frames
+
 def show_video_gif_single(data, out_path=None, use_rgb=False):
     """generate gif with a video sequence"""
     images = []

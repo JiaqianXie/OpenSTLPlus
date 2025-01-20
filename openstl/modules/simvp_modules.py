@@ -921,7 +921,10 @@ class MambaBlock(nn.Module):
 
     def forward(self, x):
         B, C, H, W = x.shape
-        data_input = x.reshape(B, C, H * W).permute(0, 2, 1)
+        data_input = x.flatten(2).transpose(1, 2)
+        # print("data input")
+        # print(data_input.shape)
+        # data_input = x.reshape(B, C, H * W).permute(0, 2, 1)
         fwd_residual = None
         fwd_hidden_states = data_input
         for layer in self.fwd_layers:
