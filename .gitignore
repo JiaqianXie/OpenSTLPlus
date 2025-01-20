@@ -119,6 +119,7 @@ output/
 work_dirs/
 workspace/
 tools/exp_bash/
+vis_dirs/
 pretrains
 *.out
 # Pytorch
