@@ -96,9 +96,8 @@ def main():
             for r in range(args.range):
                 inputs_list.append(inputs[idx + r])
                 trues_list.append(trues[idx + r])
-            inputs = np.concatenate(inputs_list, axis=0)
-            trues = np.concatenate(trues_list, axis=0)
-            print(trues.shape)
+            inputs = inputs[idx]
+            trues = trues[idx]
         if not args.reload_input:  # load the input and true for each method
             break
         else:
@@ -121,7 +120,7 @@ def main():
             preds_list = []
             for r in range(args.range):
                 preds_list.append(predicts_dict[method][idx + r])
-            preds = np.concatenate(preds_list, axis=0)
+            preds = predicts_dict[method][idx]
 
         # if i == 0:
         #     show_video_line(inputs.copy(), ncols=config['pre_seq_length'], vmax=0.6, cbar=False,
@@ -142,9 +141,22 @@ def main():
         #                         out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
         # show_video_gif_single(preds, use_rgb=use_rgb,
         #                       out_path='{}/{}_{}_{}_pred'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        print("generating image sequence")
+        show_video_line(inputs, ncols=config['pre_seq_length'], vmax=0.6, cbar=False,
+                        out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname + c_surfix, method,
+                                                      str(idx) + 'inputs.png'),
+                        format='png', use_rgb=use_rgb)
+        show_video_line(trues, ncols=config['aft_seq_length'], vmax=0.6, cbar=False,
+                        out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname + c_surfix, method,
+                                                      str(idx) + 'trues.png'),
+                        format='png', use_rgb=use_rgb)
+        show_video_line(preds, ncols=ncols, vmax=0.6, cbar=False,
+                        out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, str(idx)+'preds.png'),
+                        format='png', use_rgb=use_rgb)
+
         print("generating mp4")
-        show_video_mp4_multiple(inputs_list, trues_list, preds_list, use_rgb=use_rgb,
-                                out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        # show_video_mp4_multiple(inputs_list, trues_list, preds_list, use_rgb=use_rgb,
+        #                         out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
 
 
 if __name__ == '__main__':
