@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument('--dataname', '-d', default=None, type=str,
                         help='The name of dataset (default: "mmnist")')
     parser.add_argument('--index', '-i', default=0, type=int, help='The index of a video sequence to show')
-    parser.add_argument('--range', '-r', default=0, type=int,
+    parser.add_argument('--range', '-r', default=10, type=int,
                         help='Stack a range of video sequences together, i.e., from i to i+r video sequences')
     parser.add_argument('--work_dirs', '-w', default=None, type=str,
                         help='Path to the work_dir or the path to a set of work_dirs')
@@ -32,6 +32,7 @@ def parse_args():
                         help='The path to save visualization results')
     parser.add_argument('--vis_channel', '-vc', default=-1, type=int,
                         help='Select a channel to visualize as the heatmap')
+    parser.add_argument('--output_png', action='store_true', default=False, help='Whether output frame image sequence or video')
 
     args = parser.parse_args()
     return args
@@ -56,7 +57,7 @@ def main():
     config.update(dataset_parameters[args.dataname])
     idx, ncols = args.index, config['aft_seq_length']
     if not os.path.isdir(args.save_dirs):
-        os.mkdir(args.save_dirs)
+        os.makedirs(args.save_dirs, exist_ok=True)
     if args.vis_channel != -1:  # choose a channel
         c_surfix = f"_C{args.vis_channel}"
         assert 0 <= args.vis_channel <= config['in_shape'][1], 'Channel index out of range'
@@ -141,22 +142,23 @@ def main():
         #                         out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
         # show_video_gif_single(preds, use_rgb=use_rgb,
         #                       out_path='{}/{}_{}_{}_pred'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
-        print("generating image sequence")
-        show_video_line(inputs, ncols=config['pre_seq_length'], vmax=0.6, cbar=False,
-                        out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname + c_surfix, method,
-                                                      str(idx) + 'inputs.png'),
-                        format='png', use_rgb=use_rgb)
-        show_video_line(trues, ncols=config['aft_seq_length'], vmax=0.6, cbar=False,
-                        out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname + c_surfix, method,
-                                                      str(idx) + 'trues.png'),
-                        format='png', use_rgb=use_rgb)
-        show_video_line(preds, ncols=ncols, vmax=0.6, cbar=False,
-                        out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, str(idx)+'preds.png'),
-                        format='png', use_rgb=use_rgb)
-
-        print("generating mp4")
-        # show_video_mp4_multiple(inputs_list, trues_list, preds_list, use_rgb=use_rgb,
-        #                         out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
+        if args.output_png:
+            print("generating image sequence")
+            show_video_line(inputs, ncols=config['pre_seq_length'], vmax=0.6, cbar=False,
+                            out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname + c_surfix, method,
+                                                        str(idx) + 'inputs.png'),
+                            format='png', use_rgb=use_rgb)
+            show_video_line(trues, ncols=config['aft_seq_length'], vmax=0.6, cbar=False,
+                            out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname + c_surfix, method,
+                                                        str(idx) + 'trues.png'),
+                            format='png', use_rgb=use_rgb)
+            show_video_line(preds, ncols=ncols, vmax=0.6, cbar=False,
+                            out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, str(idx)+'preds.png'),
+                            format='png', use_rgb=use_rgb)
+        else:
+            print("generating mp4")
+            show_video_mp4_multiple(inputs_list, trues_list, preds_list, use_rgb=use_rgb,
+                                    out_path='{}/{}_{}_{}'.format(args.save_dirs, args.dataname+c_surfix, method, idx))
 
 
 if __name__ == '__main__':
